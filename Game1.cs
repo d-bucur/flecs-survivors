@@ -27,9 +27,14 @@ public class Game1 : Game
     protected override void Initialize()
     {
         base.Initialize();
+
         Entity entity = _world.Entity()
             .Set(new Transform(new Vector2(10, 20), new Vector2(0.5f, 0.5f), 0))
             .Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero));
+
+        var moveSys = _world.System<Transform, PhysicsBody>()
+            .Kind(Ecs.OnUpdate)
+            .Each(Movement);
     }
 
     protected override void LoadContent()
@@ -43,10 +48,7 @@ public class Game1 : Game
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
-        _world.Each(static (ref Transform p, ref PhysicsBody v) =>
-        {
-            p.Pos += v.Vel;
-        });
+        _world.Progress((float)gameTime.ElapsedGameTime.TotalMilliseconds);
 
         base.Update(gameTime);
     }
@@ -65,5 +67,10 @@ public class Game1 : Game
         // Always end the sprite batch when finished.
         _spriteBatch.End();
         base.Draw(gameTime);
+    }
+
+    private void Movement(Entity e, ref Transform t, ref PhysicsBody b)
+    {
+        t.Pos += b.Vel;
     }
 }
