@@ -5,15 +5,11 @@ using Flecs.NET.Core;
 
 namespace flecs_test;
 
-public record struct Transform(Vector2 Pos, Vector2 Scale, float Rot);
-public record struct PhysicsBody(Vector2 Vel, Vector2 Accel);
-
 public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
     private World _world;
-    private Texture2D _sprite;
+    private Pipeline _renderPipeline;
 
     public Game1()
     {
@@ -22,25 +18,28 @@ public class Game1 : Game
         IsMouseVisible = true;
 
         _world = World.Create();
+
+        _renderPipeline = _world.Pipeline()
+            .With(Ecs.System)
+            .With<RenderPhase>()
+            .Build();
     }
 
     protected override void Initialize()
     {
         base.Initialize();
 
-        Entity entity = _world.Entity()
-            .Set(new Transform(new Vector2(10, 20), new Vector2(0.5f, 0.5f), 0))
-            .Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero));
+        SpriteBatch _spriteBatch = new(GraphicsDevice);
+        _world.Set(new RenderCtx(_graphics, _spriteBatch));
+        _world.Set(new GameCtx(Content));
 
-        var moveSys = _world.System<Transform, PhysicsBody>()
-            .Kind(Ecs.OnUpdate)
-            .Each(Movement);
+        _world.Import<Render>();
+        _world.Import<Main>();
+        _world.Import<Movement>();
     }
 
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
-        _sprite = Content.Load<Texture2D>("sprites/investor2");
     }
 
     protected override void Update(GameTime gameTime)
@@ -57,20 +56,8 @@ public class Game1 : Game
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        // Begin the sprite batch to prepare for rendering.
-        _spriteBatch.Begin();
+        _world.RunPipeline(_renderPipeline, (float)gameTime.ElapsedGameTime.TotalMilliseconds);
 
-        _world.Each((ref Transform t) =>
-        {
-            _spriteBatch.Draw(_sprite, t.Pos, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, 1);
-        });
-        // Always end the sprite batch when finished.
-        _spriteBatch.End();
         base.Draw(gameTime);
-    }
-
-    private void Movement(Entity e, ref Transform t, ref PhysicsBody b)
-    {
-        t.Pos += b.Vel;
     }
 }
