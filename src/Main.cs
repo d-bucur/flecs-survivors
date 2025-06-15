@@ -15,6 +15,6 @@ class Main : IFlecsModule
 			.Set(new Transform(new Vector2(10, 20), new Vector2(0.5f, 0.5f), 0))
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero))
 			// TODO set sprite automatically
-			.Set(new Sprite(world.Get<GameCtx>().Content.Load<Texture2D>("sprites/investor2")));
+			.Set(new Sprite("sprites/investor2"));
 	}
 }
