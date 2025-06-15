@@ -2,7 +2,6 @@ using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Content;
-using System;
 
 namespace flecs_test;
 
