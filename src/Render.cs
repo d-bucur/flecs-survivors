@@ -8,7 +8,6 @@ namespace flecs_test;
 enum RenderPhase;
 
 public record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch);
-public record struct GameCtx(ContentManager Content);
 public struct Sprite(string Path)
 {
 	public string Path = Path;
@@ -45,7 +44,9 @@ public struct Render : IFlecsModule
 		foreach (int i in it)
 		{
 			var t = transform[i];
-			batch.Draw(sprite[i].Texture, t.Pos, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, 1);
+			// depth not working
+			var layerDepth = t.Pos.Y / 1000; // TODO find better way to make this between (0..1)
+			batch.Draw(sprite[i].Texture, t.Pos, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, layerDepth);
 		}
 		batch.End();
 	}
