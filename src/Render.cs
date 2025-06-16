@@ -7,7 +7,7 @@ namespace flecs_test;
 
 enum RenderPhase;
 
-public record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch, GraphicsDevice GraphicsDevice);
+record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch, GraphicsDevice GraphicsDevice);
 public struct Sprite(string Path)
 {
 	public string Path = Path;

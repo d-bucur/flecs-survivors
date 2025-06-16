@@ -3,8 +3,8 @@ using Microsoft.Xna.Framework;
 
 namespace flecs_test;
 
-public record struct Transform(Vector2 Pos, Vector2 Scale, float Rot);
-public record struct GlobalTransform(Vector2 Pos, Vector2 Scale, float Rot)
+record struct Transform(Vector2 Pos, Vector2 Scale, float Rot);
+record struct GlobalTransform(Vector2 Pos, Vector2 Scale, float Rot)
 {
 	public static GlobalTransform from(Transform t)
 	{

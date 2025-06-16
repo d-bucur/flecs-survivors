@@ -5,9 +5,7 @@ using System;
 
 namespace flecs_test;
 
-public record struct Shooter(int Placeholder);
-public record struct Projectile;
-public record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
+record struct Player;
 
 class PlayerModule : IFlecsModule
 {

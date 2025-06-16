@@ -5,6 +5,9 @@ using static System.Linq.Enumerable;
 
 namespace flecs_test;
 
+record struct Enemy;
+record struct EnemySpawner(bool Placeholder);
+
 class EnemiesModule : IFlecsModule
 {
 	public void InitModule(World world)

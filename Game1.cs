@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework.Content;
 
 namespace flecs_test;
 
-public record struct GameCtx(ContentManager Content);
+record struct GameCtx(ContentManager Content);
 
 public class Game1 : Game
 {

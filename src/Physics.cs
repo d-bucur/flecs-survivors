@@ -5,10 +5,10 @@ using System;
 
 namespace flecs_test;
 
-public record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
-public record struct Collider(float Radius);
+record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
+record struct Collider(float Radius);
 enum Trigger;
-public record struct CollisionEvent(Entity Other);
+record struct CollisionEvent(Entity Other);
 
 class PhysicsModule : IFlecsModule
 {
