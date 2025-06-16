@@ -3,9 +3,11 @@
 - health
 - camera movement
 - y sorting
+- mouse movement
 
 ## priority 2
 - add acceleration to movement
+- more weapon types
 - spatial hashing
 - enemies use flow field
 - particles

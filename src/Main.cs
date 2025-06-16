@@ -17,7 +17,7 @@ class Main : IFlecsModule
 {
 	public void InitModule(World world)
 	{
-		world.System<Shooter, Transform>()
+		world.System<Shooter, Transform, Heading>()
 			.Kind(Ecs.PreUpdate)
 			.Each(ProcessShooters);
 
@@ -54,12 +54,13 @@ class Main : IFlecsModule
 		it.Entity(i).Destruct();
 	}
 
-	static void ProcessShooters(Iter it, int i, ref Shooter shooter, ref Transform transform)
+	static void ProcessShooters(Iter it, int i, ref Shooter shooter, ref Transform transform, ref Heading heading)
 	{
 		shooter.Time += it.DeltaTime();
 		foreach (var weapon in shooter.Weapons)
 		{
-			foreach (var bullet in weapon.Tick(shooter.Time))
+			var playerDir = heading.Value == Vector2.Zero ? Vector2.UnitX : Vector2.Normalize(heading.Value);
+			foreach (var bullet in weapon.Tick(shooter.Time, playerDir))
 			{
 				SpawnBullet(it.World(), transform.Pos + bullet.Pos, bullet.Vel);
 			}

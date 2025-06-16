@@ -17,7 +17,8 @@ class PlayerModule : IFlecsModule
 			.Set(new Transform(new Vector2(10, 20), Vector2.One, 0))
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f))
 			.Set(new Collider(17))
-			.Set(new Shooter(new List<IBulletPattern>([new SimplePattern(1000)])))
+			.Set(new Heading())
+			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetShotgun])))
 			.Set(new PowerCollector(200));
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))

@@ -7,8 +7,9 @@ namespace flecs_test;
 
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
 record struct Collider(float Radius);
-enum Trigger;
+record struct Heading(Vector2 Value);
 record struct CollisionEvent(Entity Other);
+enum Trigger;
 
 class PhysicsModule : IFlecsModule
 {
@@ -17,15 +18,26 @@ class PhysicsModule : IFlecsModule
 		world.System<Transform, PhysicsBody>()
 			.Kind(Ecs.OnUpdate)
 			.MultiThreaded()
-			.Each(MovementSys);
+			.Each(IntegratePosition);
 
 		world.System<Transform, PhysicsBody, Collider>()
 			.Kind(Ecs.OnUpdate)
 			.Run(HandleCollisions);
 
+		world.System<Heading, PhysicsBody>()
+			.Kind(Ecs.OnUpdate)
+			.MultiThreaded()
+			.Each(UpdateHeading);
+
 		world.System<Transform, PhysicsBody, Collider>()
 			.Kind<RenderPhase>()
 			.Iter(DebugColliders);
+	}
+
+	private void UpdateHeading(ref Heading h, ref PhysicsBody b)
+	{
+		h.Value = b.Vel != Vector2.Zero ? b.Vel : h.Value;
+		if (h.Value == Vector2.Zero) h.Value = Vector2.UnitX;
 	}
 
 	// TODO update to GlobalTransforms. Need to propagate back to Transform
@@ -68,7 +80,7 @@ class PhysicsModule : IFlecsModule
 		});
 	}
 
-	private void MovementSys(Entity e, ref Transform transform, ref PhysicsBody body)
+	private void IntegratePosition(Entity e, ref Transform transform, ref PhysicsBody body)
 	{
 		transform.Pos += body.Vel;
 	}
