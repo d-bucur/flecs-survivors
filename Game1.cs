@@ -41,6 +41,7 @@ public class Game1 : Game
         _world.Import<Main>();
         _world.Import<PhysicsModule>();
         _world.Import<PlayerModule>();
+        _world.Import<EnemiesModule>();
     }
 
     protected override void LoadContent()
