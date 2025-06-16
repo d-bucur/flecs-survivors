@@ -5,9 +5,10 @@ using System;
 
 namespace flecs_test;
 
-public record struct PhysicsBody(Vector2 Vel, Vector2 Accel);
+public record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
 public record struct Collider(float Radius);
 enum Trigger;
+public record struct CollisionEvent(Entity Other);
 
 class PhysicsModule : IFlecsModule
 {
@@ -35,6 +36,7 @@ class PhysicsModule : IFlecsModule
 			// Can't capture refs inside the second lambda, so using a workaround
 			var t1Pos = t1.Pos;
 			var c1Radius = c1.Radius;
+			var b1Bounce = b1.BounceCoeff;
 			var t1PosDisplacement = Vector2.Zero;
 
 			q.Each((Entity e2, ref Transform t2, ref PhysicsBody b2, ref Collider c2) =>
@@ -47,15 +49,18 @@ class PhysicsModule : IFlecsModule
 				var penetration = separation - distance.Length();
 
 				if (penetration <= 0) return;
+
+				e2.Emit(new CollisionEvent(e1));
+				e1.Emit(new CollisionEvent(e2));
 				if (e1.Has<Trigger>() || e2.Has<Trigger>()) return;
-				
-				// TODO write collision event
-				// Console.WriteLine($"Collision between {it.Entity(i)} and {it.Entity(j)}");
+				// Console.WriteLine($"Collision between {e1} and {e2}");
+
 				// Handle Collision
 				distance.Normalize();
-				float displacement = penetration / 2;
-				t1PosDisplacement += distance * displacement;
-				t2.Pos -= distance * displacement;
+				var totalBounce = b2.BounceCoeff + b1Bounce;
+				float b1Displacement = b1Bounce / totalBounce * penetration;
+				t1PosDisplacement += distance * b1Displacement;
+				t2.Pos -= distance * (penetration - b1Displacement);
 			});
 			// Not ideal to apply it here, but it works
 			t1.Pos += t1PosDisplacement;

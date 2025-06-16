@@ -14,8 +14,9 @@ class Main : IFlecsModule
 	{
 		Entity player = world.Entity()
 			.Add<Player>()
+			.Set(new Shooter())
 			.Set(new Transform(new Vector2(10, 20), Vector2.One, 0))
-			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero))
+			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f))
 			.Set(new Collider(17));
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
@@ -29,11 +30,20 @@ class Main : IFlecsModule
 				.Add<Enemy>()
 				.Set(new Transform(new Vector2(100 * i, 20), Vector2.One, 0))
 				.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero))
-				.Set(new Collider(17));
+				.Set(new Collider(17))
+				.Observe<CollisionEvent>(HandleEnemyHit);
 			world.Entity()
 				.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 				.Set(new Sprite("sprites/alienPink_walk1"))
 				.ChildOf(enemy);
 		}
+	}
+
+	private void HandleEnemyHit(Entity entity, ref CollisionEvent collision)
+	{
+		if (!collision.Other.Has<Projectile>()) return;
+		// Console.WriteLine($"Hit by projectile: {entity} - {collision.Other}");
+		collision.Other.Destruct();
+		entity.Destruct();
 	}
 }
