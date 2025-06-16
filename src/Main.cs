@@ -44,7 +44,7 @@ class Main : IFlecsModule
 		var world = it.World();
 		var playerQ = world.QueryBuilder().With<Player>().Build();
 		var playerTransform = playerQ.First().Get<Transform>();
-		const float RADIUS = 300;
+		const float RADIUS = 500;
 
 		foreach (var i in it)
 		{

@@ -7,6 +7,7 @@ namespace flecs_test;
 
 public record struct Shooter(int Placeholder);
 public record struct Projectile;
+public record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
 
 class PlayerModule : IFlecsModule
 {
@@ -28,6 +29,17 @@ class PlayerModule : IFlecsModule
 			.TickSource(tickSource)
 			.Kind(Ecs.PreUpdate)
 			.Each(ProcessShooters);
+
+		world.System<DespawnTimed>()
+			.Kind(Ecs.PreUpdate)
+			.Each(TickDespawnTimer);
+	}
+
+	static void TickDespawnTimer(Iter it, int i, ref DespawnTimed despawn)
+	{
+		despawn.TimeSinceSpawn += it.DeltaTime();
+		if (despawn.TimeSinceSpawn < despawn.TimeToDespawn) return;
+		it.Entity(i).Destruct();
 	}
 
 	static void ProcessShooters(Iter it, int i, ref Shooter shooter, ref Transform transform)
@@ -46,6 +58,7 @@ class PlayerModule : IFlecsModule
 			.Add<Trigger>()
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(dir, Vector2.Zero))
+			.Set(new DespawnTimed(5000f))
 			.Set(new Collider(17));
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
