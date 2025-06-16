@@ -39,7 +39,8 @@ public class Game1 : Game
         _world.Import<TransformsModule>();
         _world.Import<Render>();
         _world.Import<Main>();
-        _world.Import<Movement>();
+        _world.Import<PhysicsModule>();
+        _world.Import<PlayerModule>();
     }
 
     protected override void LoadContent()

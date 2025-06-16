@@ -1,6 +1,5 @@
 using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
-using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
 using System;
 
@@ -8,21 +7,12 @@ namespace flecs_test;
 
 public record struct PhysicsBody(Vector2 Vel, Vector2 Accel);
 public record struct Collider(float Radius);
+enum Trigger;
 
-class Movement : IFlecsModule
+class PhysicsModule : IFlecsModule
 {
 	public void InitModule(World world)
 	{
-		// better place for input?
-		world.System<PhysicsBody>()
-			.With<Player>()
-			.Kind(Ecs.PreUpdate)
-			.Each(PlayerInput);
-
-		world.System<Transform, PhysicsBody>()
-			.With<Enemy>()
-			.Iter(FollowPlayer);
-
 		world.System<Transform, PhysicsBody>()
 			.Kind(Ecs.OnUpdate)
 			.Each(MovementSys);
@@ -34,19 +24,6 @@ class Movement : IFlecsModule
 		world.System<Transform, PhysicsBody, Collider>()
 			.Kind<RenderPhase>()
 			.Iter(DebugColliders);
-	}
-
-	private void PlayerInput(Entity e, ref PhysicsBody b)
-	{
-		const float SPEED = 5;
-		var state = Keyboard.GetState();
-		Vector2 dir = Vector2.Zero;
-		if (state.IsKeyDown(Keys.D)) dir += new Vector2(1, 0);
-		if (state.IsKeyDown(Keys.A)) dir += new Vector2(-1, 0);
-		if (state.IsKeyDown(Keys.S)) dir += new Vector2(0, 1);
-		if (state.IsKeyDown(Keys.W)) dir += new Vector2(0, -1);
-		if (dir != Vector2.Zero) dir.Normalize();
-		b.Vel = dir * SPEED;
 	}
 
 	// TODO update to GlobalTransforms. Need to propagate back to Transform
@@ -68,7 +45,11 @@ class Movement : IFlecsModule
 				var distance = t1Pos - t2.Pos;
 				var separation = c1Radius + c2.Radius;
 				var penetration = separation - distance.Length();
+
 				if (penetration <= 0) return;
+				if (e1.Has<Trigger>() || e2.Has<Trigger>()) return;
+				
+				// TODO write collision event
 				// Console.WriteLine($"Collision between {it.Entity(i)} and {it.Entity(j)}");
 				// Handle Collision
 				distance.Normalize();
@@ -79,21 +60,6 @@ class Movement : IFlecsModule
 			// Not ideal to apply it here, but it works
 			t1.Pos += t1PosDisplacement;
 		});
-	}
-
-	private void FollowPlayer(Iter it, Field<Transform> transform, Field<PhysicsBody> body)
-	{
-		// Get Transform of Player and update all Enemy bodies to follow
-		const float SPEED = 1;
-		var query = it.World().QueryBuilder<Transform>().With<Player>().Build();
-		ref readonly var player = ref query.First().Get<Transform>();
-
-		foreach (var i in it)
-		{
-			var dir = player.Pos - transform[i].Pos;
-			if (dir != Vector2.Zero) dir.Normalize();
-			body[i].Vel = dir * SPEED;
-		}
 	}
 
 	private void MovementSys(Entity e, ref Transform transform, ref PhysicsBody body)
