@@ -1,7 +1,8 @@
 using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
-using System;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.Extended;
+using System;
 
 namespace flecs_test;
 
@@ -28,7 +29,11 @@ class Movement : IFlecsModule
 
 		world.System<Transform, PhysicsBody, Collider>()
 			.Kind(Ecs.OnUpdate)
-			.Iter(HandleCollisions);
+			.Run(HandleCollisions);
+
+		world.System<Transform, PhysicsBody, Collider>()
+			.Kind<RenderPhase>()
+			.Iter(DebugColliders);
 	}
 
 	private void PlayerInput(Entity e, ref Transform t, ref PhysicsBody b)
@@ -42,29 +47,37 @@ class Movement : IFlecsModule
 		if (state.IsKeyDown(Keys.W)) dir += new Vector2(0, -1);
 		if (dir != Vector2.Zero) dir.Normalize();
 		b.Vel = dir * SPEED;
-		// Console.WriteLine($"{e}: {b.Vel}");
 	}
 
-	private void HandleCollisions(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<Collider> collider)
+	private void HandleCollisions(Iter it)
 	{
-		// TODO avoid repetitions (a,b), (b,a)
-		foreach (var i in it)
+		var q = it.World().Query<Transform, PhysicsBody, Collider>();
+		q.Each((Entity e1, ref Transform t1, ref PhysicsBody b1, ref Collider c1) =>
 		{
-			foreach (var j in it)
+			// Can't capture refs inside the second lambda, so using a workaround
+			var t1Pos = t1.Pos;
+			var c1Radius = c1.Radius;
+			var t1PosDisplacement = Vector2.Zero;
+
+			q.Each((Entity e2, ref Transform t2, ref PhysicsBody b2, ref Collider c2) =>
 			{
-				if (i == j) continue;
-				var distance = transform[i].Pos - transform[j].Pos;
-				var separation = collider[i].Radius + collider[j].Radius;
+				// Is there any case where the < can backfire?
+				if (e1 >= e2) return;
+				// Console.WriteLine($"Checking collisions: {e1} and {e2}");
+				var distance = t1Pos - t2.Pos;
+				var separation = c1Radius + c2.Radius;
 				var penetration = separation - distance.Length();
-				if (penetration <= 0) continue;
-				// Console.WriteLine($"Collision between {i} and {j}");
-				// Collision
+				if (penetration <= 0) return;
+				// Console.WriteLine($"Collision between {it.Entity(i)} and {it.Entity(j)}");
+				// Handle Collision
 				distance.Normalize();
 				float displacement = penetration / 2;
-				transform[i].Pos += distance * displacement;
-				transform[j].Pos -= distance * displacement;
-			}
-		}
+				t1PosDisplacement += distance * displacement;
+				t2.Pos -= distance * displacement;
+			});
+			// Not ideal to apply it here, but it works
+			t1.Pos += t1PosDisplacement;
+		});
 	}
 
 	private void FollowPlayer(Iter it, Field<Transform> transform, Field<PhysicsBody> body)
@@ -85,5 +98,16 @@ class Movement : IFlecsModule
 	private void MovementSys(Entity e, ref Transform transform, ref PhysicsBody body)
 	{
 		transform.Pos += body.Vel;
+	}
+
+	private void DebugColliders(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<Collider> collider)
+	{
+		var batch = it.World().Get<RenderCtx>().SpriteBatch;
+		batch.Begin();
+		foreach (int i in it)
+		{
+			batch.DrawCircle(transform[i].Pos, collider[i].Radius, 10, Color.Red);
+		}
+		batch.End();
 	}
 }

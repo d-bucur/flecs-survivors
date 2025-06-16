@@ -7,7 +7,6 @@ using Microsoft.Xna.Framework.Content;
 namespace flecs_test;
 
 public record struct GameCtx(ContentManager Content);
-// public record struct InputCtx(Keyboard Keyboard);
 
 public class Game1 : Game
 {
@@ -34,9 +33,8 @@ public class Game1 : Game
         base.Initialize();
 
         SpriteBatch _spriteBatch = new(GraphicsDevice);
-        _world.Set(new RenderCtx(_graphics, _spriteBatch));
+        _world.Set(new RenderCtx(_graphics, _spriteBatch, GraphicsDevice));
         _world.Set(new GameCtx(Content));
-        // _world.Set(new InputCtx(Keyboard));
 
         _world.Import<Render>();
         _world.Import<Main>();

@@ -1,13 +1,12 @@
 using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Content;
 
 namespace flecs_test;
 
 enum RenderPhase;
 
-public record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch);
+public record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch, GraphicsDevice GraphicsDevice);
 public struct Sprite(string Path)
 {
 	public string Path = Path;

@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using static System.Linq.Enumerable;
+using System;
 
 namespace flecs_test;
 
@@ -17,6 +18,7 @@ class Main : IFlecsModule
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero))
 			.Set(new Collider(15))
 			.Set(new Sprite("sprites/alienGreen_walk1"));
+		Console.WriteLine($"Player: {player}");
 
 		foreach (int i in Range(1, 5))
 		{
