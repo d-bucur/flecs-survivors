@@ -6,7 +6,20 @@ using System;
 
 namespace flecs_test;
 
+// TODO separate transform related code from physics
 public record struct Transform(Vector2 Pos, Vector2 Scale, float Rot);
+public record struct GlobalTransform(Vector2 Pos, Vector2 Scale, float Rot)
+{
+	public static GlobalTransform from(Transform t)
+	{
+		return new GlobalTransform(t.Pos, t.Scale, t.Rot);
+	}
+
+	internal GlobalTransform Apply(Transform other)
+	{
+		return new GlobalTransform(other.Pos + this.Pos, other.Scale * this.Scale, other.Rot + this.Rot);
+	}
+}
 public record struct PhysicsBody(Vector2 Vel, Vector2 Accel);
 public record struct Collider(float Radius);
 

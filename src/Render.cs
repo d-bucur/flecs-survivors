@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 
 namespace flecs_test;
 
@@ -20,9 +21,29 @@ public struct Render : IFlecsModule
 		world.Observer<Sprite>()
 			.Event(Ecs.OnSet)
 			.Iter(LoadSprite);
-		world.System<Transform, Sprite>()
+		world.System<GlobalTransform, Sprite>()
 			.Kind<RenderPhase>()
 			.Iter(RenderSprites);
+
+		world.System<Transform>()
+			.Without(Ecs.ChildOf)
+			.Each(CreateRootGlobals);
+		world.System<Transform, GlobalTransform>()
+			.TermAt(1).Parent().Cascade()
+			.Each(PropagateTransforms);
+	}
+
+	private void PropagateTransforms(Entity e, ref Transform transform, ref GlobalTransform parent)
+	{
+		GlobalTransform global = parent.Apply(transform);
+		e.Set(global);
+		// Console.WriteLine($"Set GlobalTransform for {e}: {global}");
+	}
+
+	private void CreateRootGlobals(Entity e, ref Transform t0)
+	{
+		e.Set(GlobalTransform.from(t0));
+		// Console.WriteLine($"Added Global to {e}");
 	}
 
 	private void LoadSprite(Iter it, Field<Sprite> sprite)
@@ -36,7 +57,7 @@ public struct Render : IFlecsModule
 		}
 	}
 
-	void RenderSprites(Iter it, Field<Transform> transform, Field<Sprite> sprite)
+	void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite)
 	{
 		var batch = it.World().Get<RenderCtx>().SpriteBatch;
 		batch.Begin();
