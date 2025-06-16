@@ -24,26 +24,6 @@ public struct Render : IFlecsModule
 		world.System<GlobalTransform, Sprite>()
 			.Kind<RenderPhase>()
 			.Iter(RenderSprites);
-
-		world.System<Transform>()
-			.Without(Ecs.ChildOf)
-			.Each(CreateRootGlobals);
-		world.System<Transform, GlobalTransform>()
-			.TermAt(1).Parent().Cascade()
-			.Each(PropagateTransforms);
-	}
-
-	private void PropagateTransforms(Entity e, ref Transform transform, ref GlobalTransform parent)
-	{
-		GlobalTransform global = parent.Apply(transform);
-		e.Set(global);
-		// Console.WriteLine($"Set GlobalTransform for {e}: {global}");
-	}
-
-	private void CreateRootGlobals(Entity e, ref Transform t0)
-	{
-		e.Set(GlobalTransform.from(t0));
-		// Console.WriteLine($"Added Global to {e}");
 	}
 
 	private void LoadSprite(Iter it, Field<Sprite> sprite)
@@ -64,8 +44,8 @@ public struct Render : IFlecsModule
 		foreach (int i in it)
 		{
 			var t = transform[i];
-			// depth not working
-			var layerDepth = t.Pos.Y / 1000; // TODO find better way to make this between (0..1)
+			// TODO depth not working
+			var layerDepth = t.Pos.Y / 1000; // find better way to make this between (0..1)
 			batch.Draw(sprite[i].Texture, t.Pos, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, layerDepth);
 		}
 		batch.End();

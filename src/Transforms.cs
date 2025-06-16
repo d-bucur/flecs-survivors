@@ -1,0 +1,44 @@
+using Flecs.NET.Core;
+using Microsoft.Xna.Framework;
+
+namespace flecs_test;
+
+public record struct Transform(Vector2 Pos, Vector2 Scale, float Rot);
+public record struct GlobalTransform(Vector2 Pos, Vector2 Scale, float Rot)
+{
+	public static GlobalTransform from(Transform t)
+	{
+		return new GlobalTransform(t.Pos, t.Scale, t.Rot);
+	}
+
+	internal GlobalTransform Apply(Transform other)
+	{
+		return new GlobalTransform(other.Pos + this.Pos, other.Scale * this.Scale, other.Rot + this.Rot);
+	}
+}
+
+class TransformsModule : IFlecsModule
+{
+	public void InitModule(World world)
+	{
+		world.System<Transform>()
+			.Without(Ecs.ChildOf)
+			.Each(CreateRootGlobals);
+		world.System<Transform, GlobalTransform>()
+			.TermAt(1).Parent().Cascade()
+			.Each(PropagateTransforms);
+	}
+
+	private void PropagateTransforms(Entity e, ref Transform transform, ref GlobalTransform parent)
+	{
+		GlobalTransform global = parent.Apply(transform);
+		e.Set(global);
+		// Console.WriteLine($"Set GlobalTransform for {e}: {global}");
+	}
+
+	private void CreateRootGlobals(Entity e, ref Transform t0)
+	{
+		e.Set(GlobalTransform.from(t0));
+		// Console.WriteLine($"Added Global to {e}");
+	}
+}

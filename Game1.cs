@@ -36,6 +36,7 @@ public class Game1 : Game
         _world.Set(new RenderCtx(_graphics, _spriteBatch, GraphicsDevice));
         _world.Set(new GameCtx(Content));
 
+        _world.Import<TransformsModule>();
         _world.Import<Render>();
         _world.Import<Main>();
         _world.Import<Movement>();
