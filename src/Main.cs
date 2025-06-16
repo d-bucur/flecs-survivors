@@ -1,23 +1,23 @@
 using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using System;
+using System.Collections.Generic;
 
 namespace flecs_test;
 
-record struct Shooter(int Placeholder);
+record struct Shooter(List<IBulletPattern> Weapons, float Time = 0);
 record struct Projectile;
+
 record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
 
 record struct Powerup(int Placeholder);
-record struct PowerCollector(float Range);
+record struct PowerCollector(float Range, ulong Accumulated = 0);
 
 class Main : IFlecsModule
 {
 	public void InitModule(World world)
 	{
-		var tickSource = world.Timer().Interval(1000f);
 		world.System<Shooter, Transform>()
-			.TickSource(tickSource)
 			.Kind(Ecs.PreUpdate)
 			.Each(ProcessShooters);
 
@@ -36,7 +36,7 @@ class Main : IFlecsModule
 		var collector = collectorQ.First().Get<Transform>();
 		var rangeSq = MathF.Pow(collectorQ.First().Get<PowerCollector>().Range, 2);
 
-		const float SPEED = 10;
+		const float SPEED = 8;
 		foreach (var i in it)
 		{
 			Vector2 dist = collector.Pos - transform[i].Pos;
@@ -56,11 +56,14 @@ class Main : IFlecsModule
 
 	static void ProcessShooters(Iter it, int i, ref Shooter shooter, ref Transform transform)
 	{
-		const float BULLET_SPPED = 7;
-		SpawnBullet(it.World(), transform.Pos, new Vector2(1, 0) * BULLET_SPPED);
-		SpawnBullet(it.World(), transform.Pos, new Vector2(-1, 0) * BULLET_SPPED);
-		SpawnBullet(it.World(), transform.Pos, new Vector2(0, -1) * BULLET_SPPED);
-		SpawnBullet(it.World(), transform.Pos, new Vector2(0, 1) * BULLET_SPPED);
+		shooter.Time += it.DeltaTime();
+		foreach (var weapon in shooter.Weapons)
+		{
+			foreach (var bullet in weapon.Tick(shooter.Time))
+			{
+				SpawnBullet(it.World(), transform.Pos + bullet.Pos, bullet.Vel);
+			}
+		}
 	}
 
 	static void SpawnBullet(World world, Vector2 pos, Vector2 dir)
@@ -81,7 +84,7 @@ class Main : IFlecsModule
 	internal static void HandlePowerupHit(Entity e, ref CollisionEvent collision)
 	{
 		if (!collision.Other.Has<Player>()) return;
-		Console.WriteLine("Powerup hit");
+		// Console.WriteLine("Powerup hit");
 		e.Destruct();
 	}
 }
