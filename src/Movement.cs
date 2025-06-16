@@ -14,8 +14,9 @@ class Movement : IFlecsModule
 	public void InitModule(World world)
 	{
 		// better place for input?
-		world.System<Transform, PhysicsBody>()
+		world.System<PhysicsBody>()
 			.With<Player>()
+			.Kind(Ecs.PreUpdate)
 			.Each(PlayerInput);
 
 		world.System<Transform, PhysicsBody>()
@@ -35,7 +36,7 @@ class Movement : IFlecsModule
 			.Iter(DebugColliders);
 	}
 
-	private void PlayerInput(Entity e, ref Transform t, ref PhysicsBody b)
+	private void PlayerInput(Entity e, ref PhysicsBody b)
 	{
 		const float SPEED = 5;
 		var state = Keyboard.GetState();
@@ -48,6 +49,7 @@ class Movement : IFlecsModule
 		b.Vel = dir * SPEED;
 	}
 
+	// TODO update to GlobalTransforms. Need to propagate back to Transform
 	private void HandleCollisions(Iter it)
 	{
 		var q = it.World().Query<Transform, PhysicsBody, Collider>();

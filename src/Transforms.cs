@@ -23,9 +23,13 @@ class TransformsModule : IFlecsModule
 	{
 		world.System<Transform>()
 			.Without(Ecs.ChildOf)
+			.Kind(Ecs.PostUpdate)
 			.Each(CreateRootGlobals);
+		// Can have some lag in updating GlobalTransform
+		// Would be better to update reactively on Transforms
 		world.System<Transform, GlobalTransform>()
 			.TermAt(1).Parent().Cascade()
+			.Kind(Ecs.PostUpdate)
 			.Each(PropagateTransforms);
 	}
 

@@ -44,9 +44,11 @@ public struct Render : IFlecsModule
 		foreach (int i in it)
 		{
 			var t = transform[i];
+			// pivot to bottom center of texture
+			var offset = new Vector2(-sprite[i].Texture.Width / 2, -sprite[i].Texture.Height) * transform[i].Scale;
 			// TODO depth not working
 			var layerDepth = t.Pos.Y / 1000; // find better way to make this between (0..1)
-			batch.Draw(sprite[i].Texture, t.Pos, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, layerDepth);
+			batch.Draw(sprite[i].Texture, t.Pos + offset, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, layerDepth);
 		}
 		batch.End();
 	}
