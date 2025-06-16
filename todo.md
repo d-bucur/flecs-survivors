@@ -1,11 +1,11 @@
 ## priority 1
-- enemies drop power
 - power charges to increase number of bullets
 - health
 - camera movement
 - y sorting
 
 ## priority 2
+- add acceleration to movement
 - spatial hashing
 - enemies use flow field
 - particles

@@ -76,10 +76,12 @@ class PhysicsModule : IFlecsModule
 	private void DebugColliders(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<Collider> collider)
 	{
 		var batch = it.World().Get<RenderCtx>().SpriteBatch;
-		Color color = new(new HslColor(0, 0.8f, 0.5f).ToRgb(), 0.5f);
 		batch.Begin();
 		foreach (int i in it)
 		{
+			var hue = 0f;
+			if (it.Entity(i).Has<Trigger>()) hue = 200f;
+			Color color = new(new HslColor(hue, 0.8f, 0.5f).ToRgb(), 0.5f);
 			batch.DrawCircle(transform[i].Pos, collider[i].Radius, 10, color);
 		}
 		batch.End();

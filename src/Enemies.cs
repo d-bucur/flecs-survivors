@@ -29,6 +29,11 @@ class EnemiesModule : IFlecsModule
 			.Kind(Ecs.PreUpdate)
 			.Immediate()
 			.Iter(SpawnEnemies);
+
+		world.Observer<GlobalTransform>()
+			.With<Enemy>()
+			.Event(Ecs.OnRemove)
+			.Each(HandleDeath);
 	}
 
 	static void FollowPlayer(Iter it, Field<Transform> transform, Field<PhysicsBody> body)
@@ -73,6 +78,23 @@ class EnemiesModule : IFlecsModule
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("sprites/alienPink_walk1"))
 			.ChildOf(enemy);
+	}
+
+	static void HandleDeath(Iter it, int i, ref GlobalTransform t)
+	{
+		// Spawn power pickup
+		Entity power = it.World().Entity()
+			.Add<Trigger>()
+			.Set(new Powerup())
+			.Set(new Transform(t.Pos, Vector2.One, 0))
+			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
+			.Set(new DespawnTimed(30000f))
+			.Set(new Collider(15))
+			.Observe<CollisionEvent>(Main.HandlePowerupHit);
+		it.World().Entity()
+			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
+			.Set(new Sprite("sprites/slime"))
+			.ChildOf(power);
 	}
 
 	static void HandleEnemyHit(Entity entity, ref CollisionEvent collision)
