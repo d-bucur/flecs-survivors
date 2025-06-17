@@ -85,12 +85,11 @@ class EnemiesModule : IFlecsModule
 		// Spawn power pickup
 		Entity power = it.World().Entity()
 			.Add<Trigger>()
-			.Set(new Powerup())
+			.Set(new Powerup(1))
 			.Set(new Transform(t.Pos, Vector2.One, 0))
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new DespawnTimed(30000f))
-			.Set(new Collider(15))
-			.Observe<CollisionEvent>(Main.HandlePowerupHit);
+			.Set(new Collider(15));
 		it.World().Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("sprites/slime"))

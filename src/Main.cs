@@ -10,7 +10,7 @@ record struct Projectile;
 
 record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
 
-record struct Powerup(int Placeholder);
+record struct Powerup(ulong Value = 1);
 record struct PowerCollector(float Range, ulong Accumulated = 0);
 
 class Main : IFlecsModule
@@ -80,12 +80,5 @@ class Main : IFlecsModule
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("sprites/bee"))
 			.ChildOf(bullet);
-	}
-
-	internal static void HandlePowerupHit(Entity e, ref CollisionEvent collision)
-	{
-		if (!collision.Other.Has<Player>()) return;
-		// Console.WriteLine("Powerup hit");
-		e.Destruct();
 	}
 }

@@ -1,9 +1,9 @@
 ## priority 1
-- power charges to increase number of bullets
 - health
 - camera movement
 - y sorting
 - mouse movement
+- penetrating bullets (max number of penetrations)
 
 ## priority 2
 - add acceleration to movement

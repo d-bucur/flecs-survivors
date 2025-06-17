@@ -12,6 +12,7 @@ record struct BulletData(Vector2 Vel, Vector2 Pos);
 interface IBulletPattern
 {
 	List<BulletData> Tick(double time, Vector2 direction);
+	uint Level { get; set; }
 }
 
 struct SimplePattern(float shootInterval) : IBulletPattern
@@ -20,6 +21,8 @@ struct SimplePattern(float shootInterval) : IBulletPattern
 	double lastShotTime = 0;
 	float shootInterval = shootInterval;
 	const float SPEED = 7;
+
+	public uint Level { get => 1; set => _ = 1; }
 
 	public List<BulletData> Tick(double time, Vector2 _)
 	{
@@ -51,6 +54,19 @@ struct UniformRotatingPattern(float shootInterval, int bulletsPerShot = 1, float
 	double lastShotTime = 0;
 	float rotation = 0;
 
+	uint _level = 1;
+	public uint Level
+	{
+		get => _level; set
+		{
+			// TODO make more generic
+			var diff = value - _level;
+			bulletsPerShot += (int)diff;
+			shootInterval *= MathF.Pow(0.95f, diff); // can div0
+			_level = value;
+		}
+	}
+
 	public List<BulletData> Tick(double time, Vector2 direction)
 	{
 		bulletData.Clear();
@@ -74,6 +90,7 @@ struct UniformRotatingPattern(float shootInterval, int bulletsPerShot = 1, float
 class Weapons
 {
 	public static readonly UniformRotatingPattern PresetSpiral = new(50, 1, MathF.PI * 2, MathF.PI * 2, 10);
-	public static readonly UniformRotatingPattern PresetShotgun = new(500, 8, 0, 1);
+	public static readonly UniformRotatingPattern PresetShotgun = new(1000, 2, 0, 1);
+	// public static readonly UniformRotatingPattern PresetShotgun = new(500, 8, 0, 1);
 	public static readonly UniformRotatingPattern PresetSpread = new(300, 8, MathF.PI);
 }
