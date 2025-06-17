@@ -3,10 +3,15 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using MonoGame.Extended.Input;
 
 namespace flecs_test;
 
 record struct Player;
+record struct Controls()
+{
+	public bool MouseMovementEnabled = false;
+}
 
 class PlayerModule : IFlecsModule
 {
@@ -18,7 +23,7 @@ class PlayerModule : IFlecsModule
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f))
 			.Set(new Collider(17))
 			.Set(new Heading())
-			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetSpiral])))
+			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetClosestSMG])))
 			.Set(new PowerCollector(200))
 			.Observe<CollisionEvent>(HandlePowerCollected);
 		world.Entity()
@@ -27,10 +32,17 @@ class PlayerModule : IFlecsModule
 			.ChildOf(player);
 		Console.WriteLine($"Player: {player}");
 
+		world.Set(new Controls());
+
 		world.System<PhysicsBody>()
 			.With<Player>()
 			.Kind(Ecs.PreUpdate)
-			.Each(PlayerInput);
+			.Each(PlayerKeyInput);
+
+		world.System<PhysicsBody, GlobalTransform>()
+			.With<Player>()
+			.Kind(Ecs.PreUpdate)
+			.Each(PlayerMouseInput);
 
 		world.Observer<PowerCollector, Shooter>()
 			.Event(Ecs.OnSet)
@@ -58,7 +70,7 @@ class PlayerModule : IFlecsModule
 		// Console.WriteLine($"Power: {collector.Accumulated}");
 	}
 
-	static void PlayerInput(Entity e, ref PhysicsBody b)
+	static void PlayerKeyInput(Entity e, ref PhysicsBody b)
 	{
 		const float SPEED = 5;
 		var state = Keyboard.GetState();
@@ -68,6 +80,22 @@ class PlayerModule : IFlecsModule
 		if (state.IsKeyDown(Keys.S)) dir += new Vector2(0, 1);
 		if (state.IsKeyDown(Keys.W)) dir += new Vector2(0, -1);
 		if (dir != Vector2.Zero) dir.Normalize();
+		b.Vel = dir * SPEED;
+	}
+
+	static void PlayerMouseInput(Entity e, ref PhysicsBody b, ref GlobalTransform transform)
+	{
+		var mouseState = MouseExtended.GetState();
+		ref bool mouseMovementEnabled = ref e.CsWorld().GetMut<Controls>().MouseMovementEnabled;
+		if (mouseState.WasButtonPressed(MouseButton.Left)) mouseMovementEnabled = !mouseMovementEnabled;
+		if (!mouseMovementEnabled) return;
+
+		const float SPEED = 5;
+		var camera = e.CsWorld().Query<Camera>().First().Get<Camera>();
+		var mousePosWorld = camera.Value.ScreenToWorld(new Vector2(mouseState.X, mouseState.Y) - camera.Value.Origin);
+		const int DIST_TO_MAX_SPEED = 150;
+		Vector2 dir = (mousePosWorld - transform.Pos) / DIST_TO_MAX_SPEED;
+		if (dir.Length() > 1) dir = Vector2.Normalize(dir);
 		b.Vel = dir * SPEED;
 	}
 }

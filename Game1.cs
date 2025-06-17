@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework.Content;
+using MonoGame.Extended.Input;
 
 namespace flecs_test;
 
@@ -53,6 +54,8 @@ public class Game1 : Game
     {
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
+        KeyboardExtended.Update();
+        MouseExtended.Update();
 
         _world.Progress((float)gameTime.ElapsedGameTime.TotalMilliseconds);
 

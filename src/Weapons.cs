@@ -98,4 +98,5 @@ class Weapons
 	public static readonly UniformRotatingPattern PresetShotgun = new(1000, 2, 0, 1);
 	public static readonly UniformRotatingPattern PresetClosestSMG = new(500, targetOrDirectionRotated: true, bulletsPerLevel: 0, intervalFactorPerLevel: 0.9f);
 	public static readonly UniformRotatingPattern PresetSpread = new(300, 8, MathF.PI);
+	public static readonly UniformRotatingPattern PresetDOOM = new(100, 2, MathF.PI * 2, intervalFactorPerLevel: 0.4f, bulletsPerLevel: 1f);
 }

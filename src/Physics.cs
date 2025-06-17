@@ -29,7 +29,7 @@ class PhysicsModule : IFlecsModule
 			.MultiThreaded()
 			.Each(UpdateHeading);
 
-		world.System<Transform, PhysicsBody, Collider>()
+		world.System<GlobalTransform, PhysicsBody, Collider>()
 			.Kind<RenderPhase>()
 			.Kind(Ecs.Disabled)
 			.Iter(DebugColliders);
@@ -57,6 +57,10 @@ class PhysicsModule : IFlecsModule
 			{
 				// Is there any case where the < can backfire?
 				if (e1 >= e2) return;
+				bool isTriggerE1 = e1.Has<Trigger>();
+				bool isTriggerE2 = e2.Has<Trigger>();
+				if (isTriggerE1 && isTriggerE2) return;
+				
 				// Console.WriteLine($"Checking collisions: {e1} and {e2}");
 				var distance = t1Pos - t2.Pos;
 				var separation = c1Radius + c2.Radius;
@@ -66,7 +70,7 @@ class PhysicsModule : IFlecsModule
 
 				e2.Emit(new CollisionEvent(e1));
 				e1.Emit(new CollisionEvent(e2));
-				if (e1.Has<Trigger>() || e2.Has<Trigger>()) return;
+				if (isTriggerE1 || isTriggerE2) return;
 				// Console.WriteLine($"Collision between {e1} and {e2}");
 
 				// Handle Collision
@@ -86,16 +90,18 @@ class PhysicsModule : IFlecsModule
 		transform.Pos += body.Vel;
 	}
 
-	private void DebugColliders(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<Collider> collider)
+	private void DebugColliders(Iter it, Field<GlobalTransform> transform, Field<PhysicsBody> body, Field<Collider> collider)
 	{
+		var camera = it.World().Query<Camera>().First().Get<Camera>();
 		var batch = it.World().Get<RenderCtx>().SpriteBatch;
-		batch.Begin();
+		batch.Begin(transformMatrix: camera.GetTransformMatrix());
 		foreach (int i in it)
 		{
 			var hue = 0f;
 			if (it.Entity(i).Has<Trigger>()) hue = 200f;
 			Color color = new(new HslColor(hue, 0.8f, 0.5f).ToRgb(), 0.5f);
 			batch.DrawCircle(transform[i].Pos, collider[i].Radius, 10, color);
+			batch.DrawLine(transform[i].Pos, transform[i].Pos + body[i].Vel * 10, Color.Green);
 		}
 		batch.End();
 	}

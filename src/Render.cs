@@ -9,7 +9,16 @@ namespace flecs_test;
 
 enum RenderPhase;
 
-record struct Camera(OrthographicCamera Value);
+record struct Camera(OrthographicCamera Value)
+{
+	Matrix? centerTranslation;
+
+	public Matrix GetTransformMatrix()
+	{
+		centerTranslation ??= Matrix.CreateTranslation(new Vector3(Value.Origin, 0));
+		return Value.GetViewMatrix() * centerTranslation.Value;
+	}
+}
 record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch, GraphicsDevice GraphicsDevice, GameWindow Window);
 struct Sprite(string Path)
 {
@@ -53,10 +62,10 @@ public struct Render : IFlecsModule
 		var world = it.World();
 		var renderCtx = world.Get<RenderCtx>();
 		// TODO Use this when enabling window scaling
-		// var viewportAdapter = new BoxingViewportAdapter(renderCtx.Window, renderCtx.GraphicsDevice, 800, 480);
+		var viewportAdapter = new BoxingViewportAdapter(renderCtx.Window, renderCtx.GraphicsDevice, 800, 480);
 		var playerEntity = world.QueryBuilder<Transform>().With<Player>().Build().First();
 		world.Entity("Camera")
-			.Set(new Camera(new OrthographicCamera(renderCtx.GraphicsDevice)))
+			.Set(new Camera(new OrthographicCamera(viewportAdapter)))
 			.Set(new Transform(Vector2.Zero, Vector2.One))
 			.Set(new FollowTarget(playerEntity));
 	}
@@ -79,10 +88,9 @@ public struct Render : IFlecsModule
 
 	void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite)
 	{
-		OrthographicCamera camera = it.World().Query<Camera>().First().Get<Camera>().Value;
-		var centerTranslation = Matrix.CreateTranslation(camera.BoundingRectangle.Width / 2, camera.BoundingRectangle.Height / 2, 0);
+		var camera = it.World().Query<Camera>().First().Get<Camera>();
 		var batch = it.World().Get<RenderCtx>().SpriteBatch;
-		batch.Begin(transformMatrix: camera.GetViewMatrix() * centerTranslation);
+		batch.Begin(transformMatrix: camera.GetTransformMatrix());
 
 		foreach (int i in it)
 		{

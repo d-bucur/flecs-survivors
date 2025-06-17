@@ -1,10 +1,10 @@
 ## priority 1
-- bug spread rotation is not centered
-- mouse movement
 - penetrating bullets (max number of penetrations)
-- profile scene with lots of bullets
+- bug spread rotation is not centered
+- profile scene with lots of bullets - collision checks dominate
 
 ## priority 2
+- player health and death
 - add acceleration to movement
 - more weapon types
 - spatial hashing
