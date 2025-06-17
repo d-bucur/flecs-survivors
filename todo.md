@@ -1,6 +1,4 @@
 ## priority 1
-- sprites stop rendering when Y too high/low
-- y sorting
 - nullables
 - target closest enemy
 - mouse movement

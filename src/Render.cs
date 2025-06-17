@@ -19,7 +19,7 @@ struct Sprite(string Path)
 
 public struct Render : IFlecsModule
 {
-	public void InitModule(World world)
+	public unsafe void InitModule(World world)
 	{
 		world.Observer<Sprite>()
 			.Event(Ecs.OnSet)
@@ -29,13 +29,23 @@ public struct Render : IFlecsModule
 			.Each(UpdateCameraTransform);
 		world.System<GlobalTransform, Sprite>()
 			.Kind<RenderPhase>()
-			// .Kind(Ecs.OnStore) // flecs recommends rendering here. Not sure how to do that using monogame
+			// monogame depth sorting is very finicky so do it here instead
+			.OrderBy<GlobalTransform>(OrderSprites) 
+			// flecs recommends rendering here. Not sure how to do that using monogame since Draw is separate
+			// .Kind(Ecs.OnStore) 
 			.Iter(RenderSprites);
 
 		world.System()
 			.With<Player>()
 			.Kind(Ecs.OnStart)
 			.Iter(InitCamera);
+	}
+
+	private unsafe int OrderSprites(ulong e1, void* t1, ulong e2, void* t2)
+	{
+		var p1 = ((GlobalTransform*)t1)->Pos.Y;
+		var p2 = ((GlobalTransform*)t2)->Pos.Y;
+		return (int)((p1 - p2) * 10);
 	}
 
 	static void InitCamera(Iter it)
@@ -78,9 +88,7 @@ public struct Render : IFlecsModule
 			var t = transform[i];
 			// pivot to bottom center of texture
 			var offset = new Vector2(-sprite[i].Texture.Width / 2, -sprite[i].Texture.Height) * transform[i].Scale;
-			// TODO depth not working
-			var layerDepth = t.Pos.Y / 1000; // find better way to make this between (0..1)
-			batch.Draw(sprite[i].Texture, t.Pos + offset, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, layerDepth);
+			batch.Draw(sprite[i].Texture, t.Pos + offset, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, 0);
 		}
 		batch.End();
 	}
