@@ -3,6 +3,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework.Content;
+using MonoGame.Extended.ViewportAdapters;
+using MonoGame.Extended;
 
 namespace flecs_test;
 
@@ -10,9 +12,11 @@ record struct GameCtx(ContentManager Content);
 
 public class Game1 : Game
 {
-    private GraphicsDeviceManager _graphics;
-    private World _world;
-    private Pipeline _renderPipeline;
+    GraphicsDeviceManager _graphics;
+    World _world;
+    Pipeline _renderPipeline;
+    OrthographicCamera _camera;
+    SpriteBatch _spriteBatch;
 
     public Game1()
     {
@@ -32,8 +36,8 @@ public class Game1 : Game
     {
         base.Initialize();
 
-        SpriteBatch _spriteBatch = new(GraphicsDevice);
-        _world.Set(new RenderCtx(_graphics, _spriteBatch, GraphicsDevice));
+        _spriteBatch = new(GraphicsDevice);
+        _world.Set(new RenderCtx(_graphics, _spriteBatch, GraphicsDevice, Window));
         _world.Set(new GameCtx(Content));
 
         _world.Import<TransformsModule>();

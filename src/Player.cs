@@ -12,7 +12,7 @@ class PlayerModule : IFlecsModule
 {
 	public void InitModule(World world)
 	{
-		Entity player = world.Entity()
+		Entity player = world.Entity("Player")
 			.Add<Player>()
 			.Set(new Transform(new Vector2(10, 20), Vector2.One, 0))
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f))

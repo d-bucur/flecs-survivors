@@ -1,7 +1,8 @@
 ## priority 1
+- smooth camera movement is jerky
+- sprites stop rendering when far enough
 - nullables
 - mouse movement
-- camera movement
 - y sorting
 - penetrating bullets (max number of penetrations)
 
@@ -21,3 +22,4 @@
 - roguelite powerups
 - menus
 - flocking behaviors
+- profiling tools

@@ -16,7 +16,7 @@ class EnemiesModule : IFlecsModule
 		{
 			SpawnEnemy(ref world, new Vector2(100 * i, 20), 1);
 		}
-		world.Entity().Set(new EnemySpawner(1));
+		world.Entity("EnemySpawner").Set(new EnemySpawner(1));
 
 		world.System<Transform, PhysicsBody>()
 			.With<Enemy>()

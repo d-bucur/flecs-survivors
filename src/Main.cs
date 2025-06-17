@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace flecs_test;
 
+// This is one big file with all game logic that doesn't fit in the others
+// Will break off logical groupings from here as they get big enough
+
 record struct Shooter(List<IBulletPattern> Weapons, float Time = 0);
 record struct Projectile;
 
@@ -17,6 +20,8 @@ record struct Health(int MaxValue = 1)
 {
 	public int Value = MaxValue;
 }
+
+record struct FollowTarget(Entity Target);
 
 class Main : IFlecsModule
 {
@@ -33,9 +38,20 @@ class Main : IFlecsModule
 		world.System<Powerup, Transform, PhysicsBody>()
 			.Kind(Ecs.PreUpdate)
 			.Iter(AttractPowerups);
+
+		world.System<FollowTarget, Transform>()
+			.Kind(Ecs.PostUpdate)
+			.Each(MoveFollowTargets);
 	}
 
-	private void AttractPowerups(Iter it, Field<Powerup> powerup, Field<Transform> transform, Field<PhysicsBody> body)
+	static void MoveFollowTargets(ref FollowTarget target, ref Transform transform)
+	{
+		var pos = target.Target.Get<Transform>().Pos; // should be GlobalTransform
+		transform.Pos = pos;
+		// Console.WriteLine($"Following at {pos}");
+	}
+
+	static void AttractPowerups(Iter it, Field<Powerup> powerup, Field<Transform> transform, Field<PhysicsBody> body)
 	{
 		var collectorQ = it.World().QueryBuilder().With<PowerCollector>().Build();
 		var collector = collectorQ.First().Get<Transform>();

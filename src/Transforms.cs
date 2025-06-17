@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 
 namespace flecs_test;
 
-record struct Transform(Vector2 Pos, Vector2 Scale, float Rot);
+record struct Transform(Vector2 Pos, Vector2 Scale, float Rot = 0);
 record struct GlobalTransform(Vector2 Pos, Vector2 Scale, float Rot)
 {
 	public static GlobalTransform from(Transform t)
@@ -23,7 +23,7 @@ class TransformsModule : IFlecsModule
 	{
 		world.System<Transform>()
 			.Without(Ecs.ChildOf)
-			.Kind(Ecs.PostUpdate)
+			.Kind(Ecs.PostUpdate) // TODO check this phase
 			.Each(CreateRootGlobals);
 		// Can have some lag in updating GlobalTransform
 		// Would be better to update reactively on Transforms

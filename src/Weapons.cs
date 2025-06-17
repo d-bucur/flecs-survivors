@@ -89,7 +89,7 @@ struct UniformRotatingPattern(float shootInterval, int bulletsPerShot = 1, float
 
 class Weapons
 {
-	public static readonly UniformRotatingPattern PresetSpiral = new(50, 1, MathF.PI * 2, MathF.PI * 2, 10);
+	public static readonly UniformRotatingPattern PresetSpiral = new(50, 1, MathF.PI * 2, bulletSpeed: 10);
 	public static readonly UniformRotatingPattern PresetShotgun = new(1000, 2, 0, 1);
 	// public static readonly UniformRotatingPattern PresetShotgun = new(500, 8, 0, 1);
 	public static readonly UniformRotatingPattern PresetSpread = new(300, 8, MathF.PI);
