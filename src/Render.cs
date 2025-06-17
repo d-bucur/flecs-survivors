@@ -52,10 +52,11 @@ public struct Render : IFlecsModule
 	{
 		var world = it.World();
 		var renderCtx = world.Get<RenderCtx>();
-		var viewportAdapter = new BoxingViewportAdapter(renderCtx.Window, renderCtx.GraphicsDevice, 800, 480);
+		// TODO Use this when enabling window scaling
+		// var viewportAdapter = new BoxingViewportAdapter(renderCtx.Window, renderCtx.GraphicsDevice, 800, 480);
 		var playerEntity = world.QueryBuilder<Transform>().With<Player>().Build().First();
 		world.Entity("Camera")
-			.Set(new Camera(new OrthographicCamera(viewportAdapter)))
+			.Set(new Camera(new OrthographicCamera(renderCtx.GraphicsDevice)))
 			.Set(new Transform(Vector2.Zero, Vector2.One))
 			.Set(new FollowTarget(playerEntity));
 	}
