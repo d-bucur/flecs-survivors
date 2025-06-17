@@ -8,7 +8,10 @@ namespace flecs_test;
 // This is one big file with all game logic that doesn't fit in the others
 // Will break off logical groupings from here as they get big enough
 
-record struct Shooter(List<IBulletPattern> Weapons, float Time = 0);
+record struct Shooter(List<IBulletPattern> Weapons, float Time = 0)
+{
+	public Vector2? Target;
+}
 record struct Projectile;
 
 record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
@@ -27,6 +30,10 @@ class Main : IFlecsModule
 {
 	public void InitModule(World world)
 	{
+		world.System<Shooter, GlobalTransform>()
+			.Kind(Ecs.PreUpdate)
+			.Iter(SetShooterTarget);
+
 		world.System<Shooter, Transform, Heading>()
 			.Kind(Ecs.PreUpdate)
 			.Each(ProcessShooters);
@@ -42,6 +49,28 @@ class Main : IFlecsModule
 		world.System<FollowTarget, Transform>()
 			.Kind(Ecs.PostUpdate)
 			.Each(MoveFollowTargets);
+	}
+
+	private void SetShooterTarget(Iter it, Field<Shooter> shooter, Field<GlobalTransform> transform)
+	{
+		var qEnemies = it.World().QueryBuilder<GlobalTransform>().With<Enemy>().Build();
+		foreach (var shooterId in it)
+		{
+			var myPos = transform[shooterId].Pos;
+			double smallestDistance = double.MaxValue;
+			Vector2? closestEnemy = null;
+
+			qEnemies.Each((ref GlobalTransform enemy) =>
+			{
+				double distanceSqr = (myPos - enemy.Pos).LengthSquared();
+				if (distanceSqr < smallestDistance)
+				{
+					smallestDistance = distanceSqr;
+					closestEnemy = enemy.Pos;
+				}
+			});
+			shooter[shooterId].Target = closestEnemy is null ? null : myPos - closestEnemy;
+		}
 	}
 
 	static void MoveFollowTargets(ref FollowTarget follow, ref Transform transform)
@@ -87,7 +116,7 @@ class Main : IFlecsModule
 		foreach (var weapon in shooter.Weapons)
 		{
 			var playerDir = heading.Value == Vector2.Zero ? Vector2.UnitX : Vector2.Normalize(heading.Value);
-			foreach (var bullet in weapon.Tick(shooter.Time, playerDir))
+			foreach (var bullet in weapon.Tick(shooter.Time, playerDir, shooter.Target))
 			{
 				SpawnBullet(it.World(), transform.Pos + bullet.Pos, bullet.Vel);
 			}

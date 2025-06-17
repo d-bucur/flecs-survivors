@@ -1,7 +1,8 @@
 ## priority 1
-- target closest enemy
+- bug spread rotation is not centered
 - mouse movement
 - penetrating bullets (max number of penetrations)
+- profile scene with lots of bullets
 
 ## priority 2
 - add acceleration to movement
@@ -19,4 +20,4 @@
 - roguelite powerups
 - menus
 - flocking behaviors
-- profiling tools
+- profiling

@@ -18,7 +18,7 @@ class PlayerModule : IFlecsModule
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f))
 			.Set(new Collider(17))
 			.Set(new Heading())
-			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetShotgun])))
+			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetSpiral])))
 			.Set(new PowerCollector(200))
 			.Observe<CollisionEvent>(HandlePowerCollected);
 		world.Entity()

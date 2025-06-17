@@ -3,8 +3,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework.Content;
-using MonoGame.Extended.ViewportAdapters;
-using MonoGame.Extended;
 
 namespace flecs_test;
 
