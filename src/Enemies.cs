@@ -73,6 +73,7 @@ class EnemiesModule : IFlecsModule
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero))
 			.Set(new Collider(17))
+			.Set(new Health(2))
 			.Observe<CollisionEvent>(HandleEnemyHit);
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
@@ -101,6 +102,9 @@ class EnemiesModule : IFlecsModule
 		if (!collision.Other.Has<Projectile>()) return;
 		// Console.WriteLine($"Hit by projectile: {entity} - {collision.Other}");
 		collision.Other.Destruct();
-		entity.Destruct();
+		ref var health = ref entity.GetMut<Health>();
+		health.Value -= 1;
+		entity.Modified<Health>();
+		if (health.Value <= 0) entity.Destruct();
 	}
 }

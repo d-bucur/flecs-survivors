@@ -31,6 +31,7 @@ class PhysicsModule : IFlecsModule
 
 		world.System<Transform, PhysicsBody, Collider>()
 			.Kind<RenderPhase>()
+			.Kind(Ecs.Disabled)
 			.Iter(DebugColliders);
 	}
 

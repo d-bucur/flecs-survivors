@@ -13,6 +13,11 @@ record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
 record struct Powerup(ulong Value = 1);
 record struct PowerCollector(float Range, ulong Accumulated = 0);
 
+record struct Health(int MaxValue = 1)
+{
+	public int Value = MaxValue;
+}
+
 class Main : IFlecsModule
 {
 	public void InitModule(World world)

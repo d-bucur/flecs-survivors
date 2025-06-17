@@ -55,7 +55,7 @@ class PlayerModule : IFlecsModule
 		collector.Accumulated += collision.Other.Get<Powerup>().Value;
 		e.Modified<PowerCollector>();
 		collision.Other.Destruct();
-		Console.WriteLine($"Power: {collector.Accumulated}");
+		// Console.WriteLine($"Power: {collector.Accumulated}");
 	}
 
 	static void PlayerInput(Entity e, ref PhysicsBody b)

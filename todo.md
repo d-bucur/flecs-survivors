@@ -1,9 +1,9 @@
 ## priority 1
-- health
 - camera movement
 - y sorting
 - mouse movement
 - penetrating bullets (max number of penetrations)
+- enemy health progression
 
 ## priority 2
 - add acceleration to movement
