@@ -14,7 +14,7 @@ record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch,
 struct Sprite(string Path)
 {
 	public string Path = Path;
-	public Texture2D Texture = null;
+	public Texture2D? Texture = null;
 }
 
 public struct Render : IFlecsModule
@@ -87,7 +87,8 @@ public struct Render : IFlecsModule
 		{
 			var t = transform[i];
 			// pivot to bottom center of texture
-			var offset = new Vector2(-sprite[i].Texture.Width / 2, -sprite[i].Texture.Height) * transform[i].Scale;
+			// Texture is always set here. Ignore null
+			var offset = new Vector2(-sprite[i].Texture!.Width / 2, -sprite[i].Texture!.Height) * transform[i].Scale;
 			batch.Draw(sprite[i].Texture, t.Pos + offset, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, 0);
 		}
 		batch.End();

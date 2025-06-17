@@ -1,5 +1,4 @@
 ## priority 1
-- nullables
 - target closest enemy
 - mouse movement
 - penetrating bullets (max number of penetrations)

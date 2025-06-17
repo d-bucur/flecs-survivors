@@ -15,7 +15,6 @@ public class Game1 : Game
     GraphicsDeviceManager _graphics;
     World _world;
     Pipeline _renderPipeline;
-    OrthographicCamera _camera;
     SpriteBatch _spriteBatch;
 
     public Game1()
@@ -30,15 +29,15 @@ public class Game1 : Game
             .With(Ecs.System)
             .With<RenderPhase>()
             .Build();
+
+        _spriteBatch = new(GraphicsDevice);
+        _world.Set(new RenderCtx(_graphics, _spriteBatch, GraphicsDevice, Window));
+        _world.Set(new GameCtx(Content));
     }
 
     protected override void Initialize()
     {
         base.Initialize();
-
-        _spriteBatch = new(GraphicsDevice);
-        _world.Set(new RenderCtx(_graphics, _spriteBatch, GraphicsDevice, Window));
-        _world.Set(new GameCtx(Content));
 
         _world.Import<TransformsModule>();
         _world.Import<Render>();
