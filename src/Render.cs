@@ -29,6 +29,7 @@ public struct Render : IFlecsModule
 			.Each(UpdateCameraTransform);
 		world.System<GlobalTransform, Sprite>()
 			.Kind<RenderPhase>()
+			// .Kind(Ecs.OnStore) // flecs recommends rendering here. Not sure how to do that using monogame
 			.Iter(RenderSprites);
 
 		world.System()

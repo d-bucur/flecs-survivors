@@ -1,9 +1,9 @@
 ## priority 1
-- smooth camera movement is jerky
-- sprites stop rendering when far enough
-- nullables
-- mouse movement
+- sprites stop rendering when Y too high/low
 - y sorting
+- nullables
+- target closest enemy
+- mouse movement
 - penetrating bullets (max number of penetrations)
 
 ## priority 2

@@ -21,7 +21,7 @@ record struct Health(int MaxValue = 1)
 	public int Value = MaxValue;
 }
 
-record struct FollowTarget(Entity Target);
+record struct FollowTarget(Entity Target, float FollowSpeed = 0.25f, float FollowAnticipation = 0);
 
 class Main : IFlecsModule
 {
@@ -44,11 +44,17 @@ class Main : IFlecsModule
 			.Each(MoveFollowTargets);
 	}
 
-	static void MoveFollowTargets(ref FollowTarget target, ref Transform transform)
+	static void MoveFollowTargets(ref FollowTarget follow, ref Transform transform)
 	{
-		var pos = target.Target.Get<Transform>().Pos; // should be GlobalTransform
-		transform.Pos = pos;
-		// Console.WriteLine($"Following at {pos}");
+		var targetPos = follow.Target.Get<Transform>().Pos; // should be GlobalTransform
+		var currentPos = transform.Pos;
+		// Not sure if this optional check works 
+		// Anticipation not working great for camera. Disabling now
+		// Creates jerky movement. Maybe need non linear interp
+		// var body = follow.Target.GetRef<PhysicsBody>();
+		// if (body) targetPos += body.TryGet().Vel * follow.FollowAnticipation;
+
+		transform.Pos = Vector2.Lerp(currentPos, targetPos, follow.FollowSpeed); ;
 	}
 
 	static void AttractPowerups(Iter it, Field<Powerup> powerup, Field<Transform> transform, Field<PhysicsBody> body)
