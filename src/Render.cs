@@ -28,8 +28,13 @@ struct Sprite(string Path)
 
 public struct Render : IFlecsModule
 {
+	
+	Query<Camera> cameraQuery;
+
 	public unsafe void InitModule(World world)
 	{
+		cameraQuery = world.Query<Camera>();
+
 		world.Observer<Sprite>()
 			.Event(Ecs.OnSet)
 			.Iter(LoadSprite);
@@ -39,7 +44,7 @@ public struct Render : IFlecsModule
 		world.System<GlobalTransform, Sprite>()
 			.Kind<RenderPhase>()
 			// monogame depth sorting is very finicky so do it here instead
-			.OrderBy<GlobalTransform>(OrderSprites) 
+			.OrderBy<GlobalTransform>(OrderSprites)
 			// flecs recommends rendering here. Not sure how to do that using monogame since Draw is separate
 			// .Kind(Ecs.OnStore) 
 			.Iter(RenderSprites);
@@ -88,14 +93,16 @@ public struct Render : IFlecsModule
 
 	void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite)
 	{
-		var camera = it.World().Query<Camera>().First().Get<Camera>();
+		var camera = cameraQuery.First().Get<Camera>();
 		var batch = it.World().Get<RenderCtx>().SpriteBatch;
 		batch.Begin(transformMatrix: camera.GetTransformMatrix());
+		var cutoffDistance = MathF.Pow(camera.Value.BoundingRectangle.Width, 2);
 
 		foreach (int i in it)
 		{
-			// TODO skip sprites that are too far away
 			var t = transform[i];
+			// skip if too far away from camera
+			if ((t.Pos - camera.Value.Position).LengthSquared() > cutoffDistance) continue;
 			// pivot to bottom center of texture
 			// Texture is always set here. Ignore null
 			var offset = new Vector2(-sprite[i].Texture!.Width / 2, -sprite[i].Texture!.Height) * transform[i].Scale;

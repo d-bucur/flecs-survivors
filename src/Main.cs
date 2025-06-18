@@ -59,6 +59,7 @@ class Main : IFlecsModule
 
 	private void SetShooterTarget(Iter it, Field<Shooter> shooter, Field<GlobalTransform> transform)
 	{
+		// can cache query
 		var qEnemies = it.World().QueryBuilder<GlobalTransform>().With<Enemy>().Build();
 		foreach (var shooterId in it)
 		{
@@ -137,7 +138,7 @@ class Main : IFlecsModule
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(dir, Vector2.Zero))
 			.Set(new DespawnTimed(5000f))
-			.Set(new Collider(17))
+			.Set(new Collider(17, Layers.PROJECTILE, Layers.ALL & ~Layers.POWERUP & ~Layers.PROJECTILE))
 			.Set(new Health(2))
 			.Observe<OnCollisionEnter>(HandleBulletHit);
 		world.Entity()
@@ -179,7 +180,7 @@ class Main : IFlecsModule
 			.Add<Scenery>()
 			.Set(new Transform(position, Vector2.One, 0))
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0))
-			.Set(new Collider(25));
+			.Set(new Collider(25, Layers.SCENERY, Layers.ALL & ~Layers.POWERUP & ~Layers.SCENERY));
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 30), new Vector2(1f, 1f), 0))
 			.Set(new Sprite("sprites/grassBlock"))

@@ -10,6 +10,7 @@
 - particle effects
 - animations sprite changes
 - animations tweens
+- profile with Ecs.Log.SetLevel(1);
 
 ## priority 3
 - ui
@@ -23,3 +24,4 @@
   - https://github.com/raylib-cs/raylib-cs
   - https://github.com/MrScautHD/Raylib-CSharp
   - can probably be ported to web easier: https://github.com/Kiriller12/RaylibWasm
+- juice

@@ -1,3 +1,5 @@
+global using CollisionMask = uint;
+
 using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using MonoGame.Extended;
@@ -9,8 +11,9 @@ namespace flecs_test;
 
 enum Trigger;
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
-record struct Collider(float Radius)
+record struct Collider(float Radius, CollisionMask MyLayers = Layers.DEFAULT, CollisionMask MaskLayers = Layers.ALL)
 {
+	// TODO Race condition when threaded
 	public HashSet<Id> collisionsLastFrame = [];
 	public HashSet<Id> collisionsCurrentFrame = [];
 }
@@ -25,6 +28,17 @@ record struct OnCollisionExit(Entity Other);
 record struct OnCollisionStay(Entity Other);
 
 record struct Heading(Vector2 Value);
+
+class Layers
+{
+	public const CollisionMask ALL = ~0u;
+	public const CollisionMask DEFAULT = 1 << 0;
+	public const CollisionMask PLAYER = 1 << 1;
+	public const CollisionMask ENEMY = 1 << 2;
+	public const CollisionMask PROJECTILE = 1 << 3;
+	public const CollisionMask POWERUP = 1 << 4;
+	public const CollisionMask SCENERY = 1 << 5;
+}
 
 class PhysicsModule : IFlecsModule
 {
@@ -140,33 +154,37 @@ class PhysicsModule : IFlecsModule
 					map.Map.TryGetValue((x + a, y + b), out var nearCellEntities);
 					foreach (var e2Id in nearCellEntities is null ? [] : nearCellEntities)
 					{
-						// Is there any case where the < can backfire?
-						if (e1Id >= e2Id) continue;
-
+						// Skip double checks
+						if (e1Id >= e2Id)
+							continue;
 						var e2 = world.GetAlive(e2Id);
-						ref var t2 = ref e2.GetMut<Transform>();
-						ref var b2 = ref e2.GetMut<PhysicsBody>();
+
+						// check layer masks if can collide
 						ref var c2 = ref e2.GetMut<Collider>();
+						bool canE1Collide = (c1.MaskLayers & c2.MyLayers) != 0;
+						bool canE2Collide = (c2.MaskLayers & c1.MyLayers) != 0;
+						if (!canE1Collide && !canE2Collide)
+							continue;
 
-						// TODO better avoidance system using bitmask
-						bool isTriggerE1 = e1.Has<Trigger>();
-						bool isTriggerE2 = e2.Has<Trigger>();
-						if (isTriggerE1 && isTriggerE2) continue;
-
+						// Calculate overlap vector
+						ref var t2 = ref e2.GetMut<Transform>();
 						var distance = t1.Pos - t2.Pos;
 						var separation = c1.Radius + c2.Radius;
 						var penetration = separation - distance.Length();
+						if (penetration <= 0)
+							continue;
 
-						if (penetration <= 0) continue;
-
-						c2.collisionsCurrentFrame.Add(e1.Id);
-						c1.collisionsCurrentFrame.Add(e2.Id);
+						// Register collision
+						if (canE1Collide) c1.collisionsCurrentFrame.Add(e2.Id);
+						if (canE2Collide) c2.collisionsCurrentFrame.Add(e1.Id);
 						// Console.WriteLine($"Collision between {e1.Id} and {e2.Id}");
 
-						if (isTriggerE1 || isTriggerE2) continue;
-
-						// Handle Collision
+						// Displace only if no triggers
+						if (e1.Has<Trigger>() || e2.Has<Trigger>())
+							continue;
+							
 						distance.Normalize();
+						ref var b2 = ref e2.GetMut<PhysicsBody>();
 						var totalBounce = b2.BounceCoeff + b1.BounceCoeff;
 						float b1Displacement = b1.BounceCoeff / totalBounce * penetration;
 						t1.Pos += distance * b1Displacement;

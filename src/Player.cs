@@ -21,7 +21,7 @@ class PlayerModule : IFlecsModule
 			.Add<Player>()
 			.Set(new Transform(new Vector2(10, 20), Vector2.One, 0))
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f))
-			.Set(new Collider(17))
+			.Set(new Collider(17, Layers.PLAYER, Layers.ALL & ~Layers.PROJECTILE))
 			.Set(new Heading())
 			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetDOOM])))
 			.Set(new PowerCollector(200))
