@@ -2,6 +2,8 @@ using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using System;
 using System.Collections.Generic;
+using MonoGame.Extended;
+using static System.Linq.Enumerable;
 
 namespace flecs_test;
 
@@ -13,6 +15,7 @@ record struct Shooter(List<IBulletPattern> Weapons, float Time = 0)
 	public Vector2? Target;
 }
 record struct Projectile;
+record struct Scenery;
 
 record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
 
@@ -30,6 +33,8 @@ class Main : IFlecsModule
 {
 	public void InitModule(World world)
 	{
+		InitStaticScenery(ref world);
+
 		world.System<Shooter, GlobalTransform>()
 			.Kind(Ecs.PreUpdate)
 			.Iter(SetShooterTarget);
@@ -78,10 +83,10 @@ class Main : IFlecsModule
 	{
 		var targetPos = follow.Target.Get<Transform>().Pos; // should be GlobalTransform
 		var currentPos = transform.Pos;
-		// Not sure if this optional check works 
 		// Anticipation not working great for camera. Disabling now
 		// Creates jerky movement. Maybe need non linear interp
 		// var body = follow.Target.GetRef<PhysicsBody>();
+		// Not sure if this optional check works 
 		// if (body) targetPos += body.TryGet().Vel * follow.FollowAnticipation;
 
 		transform.Pos = Vector2.Lerp(currentPos, targetPos, follow.FollowSpeed); ;
@@ -143,6 +148,7 @@ class Main : IFlecsModule
 
 	private static void HandleBulletHit(Entity e, ref OnCollisionEnter collision)
 	{
+		if (collision.Other.Has<Scenery>()) e.Destruct();
 		if (!collision.Other.Has<Enemy>()) return;
 		DecreaseHealth(e);
 	}
@@ -153,5 +159,30 @@ class Main : IFlecsModule
 		health.Value -= 1;
 		e.Modified<Health>();
 		if (health.Value <= 0) e.Destruct();
+	}
+
+	private void InitStaticScenery(ref World world)
+	{
+		for (var i = -5; i < 6; i++)
+			for (var j = -5; j < 6; j++)
+			{
+				SpawnObstacle(ref world, new Vector2(
+					i * 300 + (Random.Shared.NextSingle() - 0.5f) * 300,
+					j * 300 + (Random.Shared.NextSingle() - 0.5f) * 300
+				));
+			}
+	}
+
+	private void SpawnObstacle(ref World world, Vector2 position)
+	{
+		Entity e = world.Entity()
+			.Add<Scenery>()
+			.Set(new Transform(position, Vector2.One, 0))
+			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0))
+			.Set(new Collider(25));
+		world.Entity()
+			.Set(new Transform(new Vector2(0, 30), new Vector2(1f, 1f), 0))
+			.Set(new Sprite("sprites/grassBlock"))
+			.ChildOf(e);
 	}
 }

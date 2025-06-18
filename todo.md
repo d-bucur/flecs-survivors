@@ -1,12 +1,13 @@
 ## priority 1
-- bug spread rotation is not centered
-- profile scene with lots of bullets - collision checks dominate
+- spatial hashing
+  - profile scene with lots of bullets - collision checks dominate
 
 ## priority 2
+- bug spread rotation is not centered
 - player health and death
 - add acceleration to movement
 - more weapon types
-- spatial hashing
+- tilesets
 - enemies use flow field
 - particle effects
 - animations sprite changes
