@@ -25,7 +25,7 @@ class PlayerModule : IFlecsModule
 			.Set(new Heading())
 			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetClosestSMG])))
 			.Set(new PowerCollector(200))
-			.Observe<CollisionEvent>(HandlePowerCollected);
+			.Observe<OnCollisionEnter>(HandlePowerCollected);
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("sprites/alienGreen_walk1"))
@@ -60,7 +60,7 @@ class PlayerModule : IFlecsModule
 		}
 	}
 
-	static void HandlePowerCollected(Entity e, ref CollisionEvent collision)
+	static void HandlePowerCollected(Entity e, ref OnCollisionEnter collision)
 	{
 		if (!collision.Other.Has<Powerup>() || !e.Has<PowerCollector>()) return;
 		ref PowerCollector collector = ref e.GetMut<PowerCollector>();

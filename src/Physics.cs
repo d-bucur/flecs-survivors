@@ -2,14 +2,23 @@ using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using MonoGame.Extended;
 using System;
+using System.Collections.Generic;
 
 namespace flecs_test;
 
-record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
-record struct Collider(float Radius);
-record struct Heading(Vector2 Value);
-record struct CollisionEvent(Entity Other);
 enum Trigger;
+record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
+record struct Collider(float Radius)
+{
+	public HashSet<Id> collisionsLastFrame = new();
+	public HashSet<Id> collisionsCurrentFrame = new();
+}
+
+record struct OnCollisionEnter(Entity Other);
+record struct OnCollisionExit(Entity Other);
+record struct OnCollisionStay(Entity Other);
+
+record struct Heading(Vector2 Value);
 
 class PhysicsModule : IFlecsModule
 {
@@ -24,6 +33,10 @@ class PhysicsModule : IFlecsModule
 			.Kind(Ecs.OnUpdate)
 			.Run(HandleCollisions);
 
+		world.System<Collider>()
+			.Kind(Ecs.OnUpdate)
+			.Each(EmitCollisionEvents);
+
 		world.System<Heading, PhysicsBody>()
 			.Kind(Ecs.OnUpdate)
 			.MultiThreaded()
@@ -33,6 +46,32 @@ class PhysicsModule : IFlecsModule
 			.Kind<RenderPhase>()
 			.Kind(Ecs.Disabled)
 			.Iter(DebugColliders);
+	}
+
+	private void EmitCollisionEvents(Entity e, ref Collider collider)
+	{
+		foreach (var current in collider.collisionsCurrentFrame)
+		{
+			if (collider.collisionsLastFrame.Contains(current))
+			{
+				e.Emit(new OnCollisionStay(e.CsWorld().GetAlive(current)));
+				continue;
+			}
+			// TODO need check for null id here?
+			e.Emit(new OnCollisionEnter(e.CsWorld().GetAlive(current)));
+		}
+		foreach (var last in collider.collisionsLastFrame)
+		{
+			// OnCollisionStay already emitted above
+			if (collider.collisionsCurrentFrame.Contains(last))
+				continue;
+			e.Emit(new OnCollisionExit(e.CsWorld().GetAlive(last)));
+		}
+		// Swap buffers
+		var t = collider.collisionsLastFrame;
+		t.Clear();
+		collider.collisionsLastFrame = collider.collisionsCurrentFrame;
+		collider.collisionsCurrentFrame = t;
 	}
 
 	private void UpdateHeading(ref Heading h, ref PhysicsBody b)
@@ -52,15 +91,17 @@ class PhysicsModule : IFlecsModule
 			var c1Radius = c1.Radius;
 			var b1Bounce = b1.BounceCoeff;
 			var t1PosDisplacement = Vector2.Zero;
+			var c1Current = c1.collisionsCurrentFrame;
 
 			q.Each((Entity e2, ref Transform t2, ref PhysicsBody b2, ref Collider c2) =>
 			{
 				// Is there any case where the < can backfire?
 				if (e1 >= e2) return;
+				// TODO better avoidance system using bitmask
 				bool isTriggerE1 = e1.Has<Trigger>();
 				bool isTriggerE2 = e2.Has<Trigger>();
 				if (isTriggerE1 && isTriggerE2) return;
-				
+
 				// Console.WriteLine($"Checking collisions: {e1} and {e2}");
 				var distance = t1Pos - t2.Pos;
 				var separation = c1Radius + c2.Radius;
@@ -68,10 +109,11 @@ class PhysicsModule : IFlecsModule
 
 				if (penetration <= 0) return;
 
-				e2.Emit(new CollisionEvent(e1));
-				e1.Emit(new CollisionEvent(e2));
+				c2.collisionsCurrentFrame.Add(e1.Id);
+				c1Current.Add(e2.Id);
+				// Console.WriteLine($"Collision between {e1.Id} and {e2.Id}");
+
 				if (isTriggerE1 || isTriggerE2) return;
-				// Console.WriteLine($"Collision between {e1} and {e2}");
 
 				// Handle Collision
 				distance.Normalize();

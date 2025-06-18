@@ -134,14 +134,14 @@ class Main : IFlecsModule
 			.Set(new DespawnTimed(5000f))
 			.Set(new Collider(17))
 			.Set(new Health(2))
-			.Observe<CollisionEvent>(HandleBulletHit);
+			.Observe<OnCollisionEnter>(HandleBulletHit);
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("sprites/bee"))
 			.ChildOf(bullet);
 	}
 
-	private static void HandleBulletHit(Entity e, ref CollisionEvent collision)
+	private static void HandleBulletHit(Entity e, ref OnCollisionEnter collision)
 	{
 		if (!collision.Other.Has<Enemy>()) return;
 		DecreaseHealth(e);

@@ -85,7 +85,7 @@ class EnemiesModule : IFlecsModule
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero))
 			.Set(new Collider(17))
 			.Set(new Health((int)level))
-			.Observe<CollisionEvent>(HandleEnemyHit);
+			.Observe<OnCollisionEnter>(HandleEnemyHit);
 		var sprite = level switch
 		{
 			1 => "sprites/alienBeige_walk1",
@@ -115,7 +115,7 @@ class EnemiesModule : IFlecsModule
 			.ChildOf(power);
 	}
 
-	static void HandleEnemyHit(Entity entity, ref CollisionEvent collision)
+	static void HandleEnemyHit(Entity entity, ref OnCollisionEnter collision)
 	{
 		if (!collision.Other.Has<Projectile>()) return;
 		// Console.WriteLine($"Hit by projectile: {entity} - {collision.Other}");

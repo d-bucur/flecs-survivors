@@ -1,5 +1,4 @@
 ## priority 1
-- penetrating bullets (max number of penetrations)
 - bug spread rotation is not centered
 - profile scene with lots of bullets - collision checks dominate
 
