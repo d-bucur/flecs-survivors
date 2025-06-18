@@ -94,6 +94,7 @@ public struct Render : IFlecsModule
 
 		foreach (int i in it)
 		{
+			// TODO skip sprites that are too far away
 			var t = transform[i];
 			// pivot to bottom center of texture
 			// Texture is always set here. Ignore null

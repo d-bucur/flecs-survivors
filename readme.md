@@ -1,4 +1,9 @@
 # Dev
+## Errors
+Error handling inside systems doesn't work with .NET 9.0. Run with following to use old system that reports errors correctly 
+```
+DOTNET_LegacyExceptionHandling=1 dotnet run
+```
 ## Profiling
 Install [dotnet-trace](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#install). 
 ```

@@ -23,14 +23,14 @@ class PlayerModule : IFlecsModule
 			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f))
 			.Set(new Collider(17))
 			.Set(new Heading())
-			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetWeak])))
+			.Set(new Shooter(new List<IBulletPattern>([Weapons.PresetDOOM])))
 			.Set(new PowerCollector(200))
 			.Observe<OnCollisionEnter>(HandlePowerCollected);
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("sprites/alienGreen_walk1"))
 			.ChildOf(player);
-		Console.WriteLine($"Player: {player}");
+		Console.WriteLine($"Player: {player.Id.Value}");
 
 		world.Set(new Controls());
 

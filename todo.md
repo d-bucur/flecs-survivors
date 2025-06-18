@@ -1,6 +1,4 @@
 ## priority 1
-- spatial hashing
-  - profile scene with lots of bullets - collision checks dominate
 
 ## priority 2
 - bug spread rotation is not centered
@@ -21,3 +19,7 @@
 - menus
 - flocking behaviors
 - profiling
+- port to raylib?
+  - https://github.com/raylib-cs/raylib-cs
+  - https://github.com/MrScautHD/Raylib-CSharp
+  - can probably be ported to web easier: https://github.com/Kiriller12/RaylibWasm
