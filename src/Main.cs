@@ -36,6 +36,7 @@ class Main : IFlecsModule
 
 		world.System<Shooter, Transform, Heading>()
 			.Kind(Ecs.PreUpdate)
+			.Immediate()
 			.Each(ProcessShooters);
 
 		world.System<DespawnTimed>()
@@ -131,10 +132,26 @@ class Main : IFlecsModule
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(dir, Vector2.Zero))
 			.Set(new DespawnTimed(5000f))
-			.Set(new Collider(17));
+			.Set(new Collider(17))
+			.Set(new Health(2))
+			.Observe<CollisionEvent>(HandleBulletHit);
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("sprites/bee"))
 			.ChildOf(bullet);
+	}
+
+	private static void HandleBulletHit(Entity e, ref CollisionEvent collision)
+	{
+		if (!collision.Other.Has<Enemy>()) return;
+		DecreaseHealth(e);
+	}
+
+	public static void DecreaseHealth(Entity e)
+	{
+		ref var health = ref e.GetMut<Health>();
+		health.Value -= 1;
+		e.Modified<Health>();
+		if (health.Value <= 0) e.Destruct();
 	}
 }

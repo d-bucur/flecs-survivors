@@ -119,10 +119,6 @@ class EnemiesModule : IFlecsModule
 	{
 		if (!collision.Other.Has<Projectile>()) return;
 		// Console.WriteLine($"Hit by projectile: {entity} - {collision.Other}");
-		collision.Other.Destruct();
-		ref var health = ref entity.GetMut<Health>();
-		health.Value -= 1;
-		entity.Modified<Health>();
-		if (health.Value <= 0) entity.Destruct();
+		Main.DecreaseHealth(entity);
 	}
 }
