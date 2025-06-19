@@ -6,6 +6,7 @@ using MonoGame.Extended;
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace flecs_test;
 
@@ -13,14 +14,13 @@ enum Trigger;
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
 record struct Collider(float Radius, CollisionMask MyLayers = Layers.DEFAULT, CollisionMask MaskLayers = Layers.ALL)
 {
-	// TODO Race condition when threaded
 	public HashSet<Id> collisionsLastFrame = [];
 	public HashSet<Id> collisionsCurrentFrame = [];
 }
 record struct SpatialMap(float CellSize)
 {
 	// Could try to profile HybridDictionary
-	public ConcurrentDictionary<(int, int), List<ulong>> Map = new(-1, 10);
+	public ConcurrentDictionary<(int, int), (Mutex, List<ulong>)> Map = new(-1, 10);
 }
 
 record struct OnCollisionEnter(Entity Other);
@@ -65,8 +65,9 @@ class PhysicsModule : IFlecsModule
 			.MultiThreaded()
 			.Each(BuildSpatialHash);
 
-		world.System<Transform, PhysicsBody, Collider>()
+		world.System()
 			.Kind(Ecs.OnUpdate)
+			.MultiThreaded()
 			.Run(HandleCollisions);
 
 		world.System<Collider>()
@@ -121,16 +122,18 @@ class PhysicsModule : IFlecsModule
 		var x = (int)(transform.Pos.X / map.CellSize);
 		var y = (int)(transform.Pos.Y / map.CellSize);
 		var key = (x, y);
-		map.Map.TryGetValue(key, out List<ulong>? values);
-		values ??= new(2);
-		values.Add(e.Id.Value);
-		map.Map[key] = values;
+		map.Map.TryGetValue(key, out (Mutex, List<ulong>) val);
+		val.Item1 ??= new();
+		val.Item2 ??= new(2);
+		val.Item2.Add(e.Id.Value);
+		map.Map[key] = val;
 	}
 
+	// Only check down and right. Avoids deadlocking on mutex since corners will always release
+	// Unfortunately this means we have to double check entities in both directions 
 	readonly (int, int)[] _neighbors = [
-		(-1, -1),(0, -1),(1, -1),
-		(-1, 0),(0, 0),(1, 0),
-		(-1, 1),(0, 1),(1, 1),
+		(0, 0),(1, 0),
+		(0, 1),(1, 1),
 	];
 
 	// TODO update to GlobalTransforms. Need to propagate back to Transform
@@ -139,60 +142,78 @@ class PhysicsModule : IFlecsModule
 		World world = it.World();
 		var map = world.Get<SpatialMap>();
 
-		foreach (var ((a, b), startCellEntities) in map.Map)
-			foreach (var e1Id in startCellEntities)
+		var countdown = new CountdownEvent(map.Map.Count);
+
+		foreach (var ((a, b), startCell) in map.Map)
+		{
+			ThreadPool.QueueUserWorkItem((cb) =>
 			{
-				var e1 = world.GetAlive(e1Id);
-				// TODO use fields instead? Need to translate ids to array indx
-				ref var t1 = ref e1.GetMut<Transform>();
-				ref var b1 = ref e1.GetMut<PhysicsBody>();
-				ref var c1 = ref e1.GetMut<Collider>();
-
-				foreach (var (x, y) in _neighbors)
+				startCell.Item1.WaitOne();
+				foreach (var e1Id in startCell.Item2)
 				{
-					// Console.WriteLine($"Checking collisions {startCellKey}: ({x}, {y})");
-					map.Map.TryGetValue((x + a, y + b), out var nearCellEntities);
-					foreach (var e2Id in nearCellEntities is null ? [] : nearCellEntities)
+					var e1 = world.GetAlive(e1Id);
+					// TODO use fields instead? Need to translate ids to array indx
+					ref var t1 = ref e1.GetMut<Transform>();
+					ref var b1 = ref e1.GetMut<PhysicsBody>();
+					ref var c1 = ref e1.GetMut<Collider>();
+
+					foreach (var (x, y) in _neighbors)
 					{
-						// Skip double checks
-						if (e1Id >= e2Id)
-							continue;
-						var e2 = world.GetAlive(e2Id);
+						// Console.WriteLine($"Checking collisions {startCellKey}: ({x}, {y})");
+						map.Map.TryGetValue((x + a, y + b), out (Mutex, List<ulong>) nearCell);
+						if (nearCell.Item1 is null) continue;
 
-						// check layer masks if can collide
-						ref var c2 = ref e2.GetMut<Collider>();
-						bool canE1Collide = (c1.MaskLayers & c2.MyLayers) != 0;
-						bool canE2Collide = (c2.MaskLayers & c1.MyLayers) != 0;
-						if (!canE1Collide && !canE2Collide)
-							continue;
+						bool areCellsDifferent = x != 0 || y != 0;
+						if (areCellsDifferent)
+							nearCell.Item1.WaitOne();
+						foreach (var e2Id in nearCell.Item2)
+						{
+							// Skip same entity check and symmetical ones in the same cell
+							if (e1Id == e2Id || (!areCellsDifferent && e1Id > e2Id) )
+								continue;
+							var e2 = world.GetAlive(e2Id);
 
-						// Calculate overlap vector
-						ref var t2 = ref e2.GetMut<Transform>();
-						var distance = t1.Pos - t2.Pos;
-						var separation = c1.Radius + c2.Radius;
-						var penetration = separation - distance.Length();
-						if (penetration <= 0)
-							continue;
+							// check layer masks if can collide
+							ref var c2 = ref e2.GetMut<Collider>();
+							bool canE1Collide = (c1.MaskLayers & c2.MyLayers) != 0;
+							bool canE2Collide = (c2.MaskLayers & c1.MyLayers) != 0;
+							if (!canE1Collide && !canE2Collide)
+								continue;
 
-						// Register collision
-						if (canE1Collide) c1.collisionsCurrentFrame.Add(e2.Id);
-						if (canE2Collide) c2.collisionsCurrentFrame.Add(e1.Id);
-						// Console.WriteLine($"Collision between {e1.Id} and {e2.Id}");
+							// Calculate overlap vector
+							ref var t2 = ref e2.GetMut<Transform>();
+							var distance = t1.Pos - t2.Pos;
+							var separation = c1.Radius + c2.Radius;
+							var penetration = separation - distance.Length();
+							if (penetration <= 0)
+								continue;
 
-						// Displace only if no triggers
-						if (e1.Has<Trigger>() || e2.Has<Trigger>())
-							continue;
-							
-						distance.Normalize();
-						ref var b2 = ref e2.GetMut<PhysicsBody>();
-						var totalBounce = b2.BounceCoeff + b1.BounceCoeff;
-						float b1Displacement = b1.BounceCoeff / totalBounce * penetration;
-						t1.Pos += distance * b1Displacement;
-						t2.Pos -= distance * (penetration - b1Displacement);
+							// Register collision
+							if (canE1Collide) c1.collisionsCurrentFrame.Add(e2.Id);
+							if (canE2Collide) c2.collisionsCurrentFrame.Add(e1.Id);
+							// Console.WriteLine($"Collision between {e1.Id} and {e2.Id}");
+
+							// Displace only if no triggers
+							if (e1.Has<Trigger>() || e2.Has<Trigger>())
+								continue;
+
+							distance.Normalize();
+							ref var b2 = ref e2.GetMut<PhysicsBody>();
+							var totalBounce = b2.BounceCoeff + b1.BounceCoeff;
+							float b1Displacement = b1.BounceCoeff / totalBounce * penetration;
+							t1.Pos += distance * b1Displacement;
+							t2.Pos -= distance * (penetration - b1Displacement);
+						}
+						if (areCellsDifferent)
+							nearCell.Item1.ReleaseMutex();
 					}
 				}
-			}
-
+				startCell.Item1.ReleaseMutex();
+				countdown.Signal();
+			});
+		}
+		// Is WaitAll better? https://learn.microsoft.com/en-us/dotnet/api/system.threading.waithandle.waitall?view=net-9.0
+		countdown.Wait();
 	}
 
 	private void IntegratePosition(Entity e, ref Transform transform, ref PhysicsBody body)

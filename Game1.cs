@@ -4,6 +4,8 @@ using Microsoft.Xna.Framework.Input;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework.Content;
 using MonoGame.Extended.Input;
+using System.Threading;
+using System;
 
 namespace flecs_test;
 
@@ -37,6 +39,8 @@ public class Game1 : Game
         _spriteBatch = new(GraphicsDevice);
         _world.Set(new RenderCtx(_graphics, _spriteBatch, GraphicsDevice, Window));
         _world.Set(new GameCtx(Content));
+        // _world.SetThreads(Environment.ProcessorCount);
+        // _world.SetTaskThreads(Environment.ProcessorCount);
 
         _world.Import<TransformsModule>();
         _world.Import<Render>();
