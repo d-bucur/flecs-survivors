@@ -1,0 +1,10 @@
+{
+	"profiles": {
+		"flecs-test": {
+			"commandName": "Project",
+			"environmentVariables": {
+				"DOTNET_LegacyExceptionHandling": "1"
+			}
+		}
+	}
+}
