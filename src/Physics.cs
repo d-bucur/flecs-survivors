@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
+using MonoGame.Extended.Collections;
 
 namespace flecs_test;
 
@@ -21,6 +22,11 @@ record struct SpatialMap(float CellSize)
 {
 	// Could try to profile HybridDictionary
 	public ConcurrentDictionary<(int, int), List<ulong>> Map = new(-1, 10);
+	public Pool<List<ulong>> pool = new(
+		() => new List<ulong>(3),
+		(l) => l.Clear(),
+		50
+	);
 }
 
 record struct OnCollisionEnter(Entity Other);
@@ -54,7 +60,12 @@ class PhysicsModule : IFlecsModule
 
 		world.System<SpatialMap>()
 			.Kind(Ecs.OnUpdate)
-			.Each((ref SpatialMap s) => s.Map.Clear());
+			.Each((ref SpatialMap s) =>
+			{
+				foreach (var (k, l) in s.Map)
+					s.pool.Free(l);
+				s.Map.Clear();
+			});
 
 		world.System<Transform, SpatialMap>()
 			.TermAt(1).Singleton()
@@ -125,7 +136,7 @@ class PhysicsModule : IFlecsModule
 		var y = (int)(transform.Pos.Y / map.CellSize);
 		var key = (x, y);
 		map.Map.TryGetValue(key, out List<ulong>? val);
-		val ??= new(2);
+		val ??= map.pool.Obtain();
 		val.Add(e.Id.Value);
 		map.Map[key] = val;
 	}

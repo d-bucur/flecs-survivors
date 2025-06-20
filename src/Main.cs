@@ -55,6 +55,11 @@ class Main : IFlecsModule
 		world.System<FollowTarget, Transform>()
 			.Kind(Ecs.PostUpdate)
 			.Each(MoveFollowTargets);
+
+		world.System()
+			.Kind(Ecs.PostLoad)
+			.Kind(Ecs.Disabled)
+			.Run((it) => Console.WriteLine($"Entities: {it.World().Count(Ecs.Any)}"));
 	}
 
 	private void SetShooterTarget(Iter it, Field<Shooter> shooter, Field<GlobalTransform> transform)
