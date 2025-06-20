@@ -1,4 +1,5 @@
 ## priority 1
+- enemies use flow field
 
 ## priority 2
 - bug spread rotation is not centered
@@ -6,7 +7,6 @@
 - add acceleration to movement
 - more weapon types
 - tilesets
-- enemies use flow field
 - particle effects
 - animations sprite changes
 - animations tweens

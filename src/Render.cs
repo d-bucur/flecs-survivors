@@ -44,6 +44,7 @@ public struct Render : IFlecsModule
 		world.System<GlobalTransform, Sprite>()
 			.Kind<RenderPhase>()
 			// monogame depth sorting is very finicky so do it here instead
+			// TODO full sorting on each frame is expensive. Maybe some way to cache a more stable list using change detection?
 			.OrderBy<GlobalTransform>(OrderSprites)
 			// flecs recommends rendering here. Not sure how to do that using monogame since Draw is separate
 			// .Kind(Ecs.OnStore) 
@@ -59,7 +60,7 @@ public struct Render : IFlecsModule
 	{
 		var p1 = ((GlobalTransform*)t1)->Pos.Y;
 		var p2 = ((GlobalTransform*)t2)->Pos.Y;
-		return (int)((p1 - p2) * 10);
+		return (int)((p1 - p2));
 	}
 
 	static void InitCamera(Iter it)

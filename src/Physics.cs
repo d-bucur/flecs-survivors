@@ -142,7 +142,6 @@ class PhysicsModule : IFlecsModule
 	}
 
 	// Only check down and right. Avoids deadlocking on mutex since corners will always release
-	// Unfortunately this means we have to double check entities in both directions 
 	readonly (int, int)[] _neighbors = [
 		(0, 0),(1, 0),
 		(0, 1),(1, 1),
@@ -151,11 +150,16 @@ class PhysicsModule : IFlecsModule
 	// TODO update to GlobalTransforms. Need to propagate back to Transform
 	private void HandleCollisions(Iter it)
 	{
+		// Does a multithreaded check for entities in each cell of the Spatial map and its neighbors.
+		// Each cell is locked by a monitor when being iterated on to avoid race conditions
+		// Unfortunately this means out of order iteration of entities, which does not improve that much
+		// over the single threaded sequential iteration of all entities without spatial hashing
+		// Maybe some way to iterate the entities in order?
 		World world = it.World();
 		var map = world.Get<SpatialMap>();
 
 		var countdown = new CountdownEvent(map.Map.Count);
-
+	
 		foreach (var ((a, b), startCell) in map.Map)
 		{
 			ThreadPool.QueueUserWorkItem((cb) =>
@@ -164,7 +168,8 @@ class PhysicsModule : IFlecsModule
 				foreach (var e1Id in startCell)
 				{
 					var e1 = world.GetAlive(e1Id);
-					// TODO use fields instead? Need to translate ids to array indx
+					// out of order calls into flecs like this are slow
+					// a more efficient call to get multiple components is an open issue
 					ref var t1 = ref e1.GetMut<Transform>();
 					ref var b1 = ref e1.GetMut<PhysicsBody>();
 					ref var c1 = ref e1.GetMut<Collider>();
