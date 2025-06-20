@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using MonoGame.Extended.Collections;
 
+
 namespace flecs_test;
 
 enum Trigger;
