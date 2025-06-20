@@ -20,7 +20,7 @@ record struct Collider(float Radius, CollisionMask MyLayers = Layers.DEFAULT, Co
 record struct SpatialMap(float CellSize)
 {
 	// Could try to profile HybridDictionary
-	public ConcurrentDictionary<(int, int), (Mutex, List<ulong>)> Map = new(-1, 10);
+	public ConcurrentDictionary<(int, int), List<ulong>> Map = new(-1, 10);
 }
 
 record struct OnCollisionEnter(Entity Other);
@@ -67,11 +67,13 @@ class PhysicsModule : IFlecsModule
 
 		world.System()
 			.Kind(Ecs.OnUpdate)
+			.Read<SpatialMap>()
 			.MultiThreaded()
 			.Run(HandleCollisions);
 
 		world.System<Collider>()
 			.Kind(Ecs.OnUpdate)
+			.MultiThreaded()
 			.Each(EmitCollisionEvents);
 
 		world.System<Heading, PhysicsBody>()
@@ -122,10 +124,9 @@ class PhysicsModule : IFlecsModule
 		var x = (int)(transform.Pos.X / map.CellSize);
 		var y = (int)(transform.Pos.Y / map.CellSize);
 		var key = (x, y);
-		map.Map.TryGetValue(key, out (Mutex, List<ulong>) val);
-		val.Item1 ??= new();
-		val.Item2 ??= new(2);
-		val.Item2.Add(e.Id.Value);
+		map.Map.TryGetValue(key, out List<ulong>? val);
+		val ??= new(2);
+		val.Add(e.Id.Value);
 		map.Map[key] = val;
 	}
 
@@ -148,8 +149,8 @@ class PhysicsModule : IFlecsModule
 		{
 			ThreadPool.QueueUserWorkItem((cb) =>
 			{
-				startCell.Item1.WaitOne();
-				foreach (var e1Id in startCell.Item2)
+				Monitor.Enter(startCell);
+				foreach (var e1Id in startCell)
 				{
 					var e1 = world.GetAlive(e1Id);
 					// TODO use fields instead? Need to translate ids to array indx
@@ -160,16 +161,16 @@ class PhysicsModule : IFlecsModule
 					foreach (var (x, y) in _neighbors)
 					{
 						// Console.WriteLine($"Checking collisions {startCellKey}: ({x}, {y})");
-						map.Map.TryGetValue((x + a, y + b), out (Mutex, List<ulong>) nearCell);
-						if (nearCell.Item1 is null) continue;
+						map.Map.TryGetValue((x + a, y + b), out List<ulong>? nearCell);
+						if (nearCell is null) continue;
 
 						bool areCellsDifferent = x != 0 || y != 0;
 						if (areCellsDifferent)
-							nearCell.Item1.WaitOne();
-						foreach (var e2Id in nearCell.Item2)
+							Monitor.Enter(nearCell);
+						foreach (var e2Id in nearCell)
 						{
 							// Skip same entity check and symmetical ones in the same cell
-							if (e1Id == e2Id || (!areCellsDifferent && e1Id > e2Id) )
+							if (e1Id == e2Id || (!areCellsDifferent && e1Id > e2Id))
 								continue;
 							var e2 = world.GetAlive(e2Id);
 
@@ -205,10 +206,10 @@ class PhysicsModule : IFlecsModule
 							t2.Pos -= distance * (penetration - b1Displacement);
 						}
 						if (areCellsDifferent)
-							nearCell.Item1.ReleaseMutex();
+							Monitor.Exit(nearCell);
 					}
 				}
-				startCell.Item1.ReleaseMutex();
+				Monitor.Exit(startCell);
 				countdown.Signal();
 			});
 		}
