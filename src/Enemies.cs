@@ -15,20 +15,16 @@ class EnemiesModule : IFlecsModule {
 	public void InitModule(World world) {
 		world.Entity("EnemySpawner").Set(new EnemySpawner(1));
 
-		world.Set(new FlowField(50, 7));
-
-		world.System<FlowField>()
-			.Kind(Ecs.PreUpdate)
-			.Each((ref FlowField field) => field.Obstacles.Clear());
+		world.Set(new FlowField(50, 15));
 
 		world.System<FlowField, GlobalTransform>()
 			.TermAt(0).Singleton()
 			.With<Scenery>()
 			.Kind(Ecs.PreUpdate)
-			// .MultiThreaded()
-			.Each(FlowFieldECS.BlockScenery);
+			.Run(FlowFieldECS.BlockScenery);
 
-		// TODO can skip updating flow field every few frames
+		// Could skip updating flow field every few frames
+		// or introduce a delay and have a pipeline of fields
 		world.System<FlowField, GlobalTransform>()
 			.TermAt(0).Singleton()
 			.With<Player>()
@@ -84,9 +80,9 @@ class EnemiesModule : IFlecsModule {
 		// TODO when close enough should go directly towards player
 		// TODO 
 		foreach (var i in it) {
-			var key = field.HashAt(transform[i].Pos);
+			var key = field.ToFieldPos(transform[i].Pos);
 			if (key is not null) {
-				var force = field.Field[field.ToKey(key.Value)];
+				var force = field.Flow[field.ToKey(key.Value)];
 				body[i].Vel = force * SPEED;
 			}
 			else { // outside of field. Use direct force towards player

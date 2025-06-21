@@ -6,74 +6,128 @@ using MonoGame.Extended;
 
 namespace flecs_test;
 
-record struct FlowField(float CellSize, int FieldWidth = 10) {
+record struct FlowField(float CellSize, uint FullWidth) {
 	internal Vector2 Origin; // Center of player
-	internal Vector2[] Field = new Vector2[(FieldWidth * 2 + 1) * (FieldWidth * 2 + 1)];
-	internal HashSet<Vec2I> Obstacles = new(20);
-	public Vector2 CellCenterOffset {
-		get {
-			// could cache
-			return Vector2.One * CellSize / 2;
-		}
+
+	internal readonly uint FullWidth = FullWidth;
+	internal readonly uint SideWidth = (FullWidth - 1) / 2;
+	internal readonly Vector2 CellCenterOffset = Vector2.One * CellSize / 2;
+
+	internal uint[] Costs = new uint[FullWidth * FullWidth];
+	internal uint[] Integration = new uint[FullWidth * FullWidth];
+	// Could be direction enum for optimization
+	internal Vector2[] Flow = new Vector2[FullWidth * FullWidth];
+
+	// TODO use Flags in physics layers
+	internal CellFlags[] Flags = new CellFlags[FullWidth * FullWidth];
+	[Flags]
+	public enum CellFlags {
+		None = 0,
+		VisitedFlow = 1,
 	}
 
-	public Vec2I? HashAt(Vector2 pos) {
+	public readonly Vec2I? ToFieldPos(Vector2 pos) {
 		var fieldPos = (pos - Origin + CellCenterOffset) / CellSize;
 		var hash = new Vec2I((int)float.Floor(fieldPos.X), (int)float.Floor(fieldPos.Y));
-		if (Math.Abs(hash.X) > FieldWidth || MathF.Abs(hash.Y) > FieldWidth)
+		if (IsOutsideBounds(hash))
 			return null;
 		return hash;
 	}
 
-	// change to uint
-	public int ToKey(Vec2I pos) {
-		return (pos.Y + FieldWidth) * (FieldWidth * 2 + 1) + pos.X + FieldWidth;
+	private readonly bool IsOutsideBounds(Vec2I pos) {
+		return Math.Abs(pos.X) > SideWidth || Math.Abs(pos.Y) > SideWidth;
+	}
+
+	public readonly uint ToKey(Vec2I pos) {
+		return (uint)((pos.Y + (int)SideWidth) * FullWidth + pos.X + (int)SideWidth);
+	}
+
+	public readonly uint? ToKeySafe(Vec2I pos) {
+		return IsOutsideBounds(pos) ? null : ToKey(pos);
 	}
 }
 
 class FlowFieldECS {
-	internal static void BlockScenery(ref FlowField field, ref GlobalTransform transform) {
-		// TODO obstacles should also block neighboring cells if big enough
-		var pos = field.HashAt(transform.Pos);
-		if (pos is null) return;
-		field.Obstacles.Add(pos.Value);
-		// Console.WriteLine($"Blocking at: {pos}");
+	internal static void BlockScenery(Iter it) {
+		ref readonly var field = ref it.World().Get<FlowField>();
+		// Array.Fill<uint>(field.Costs, 0); // span should be faster than Array.Fill
+		new Span<uint>(field.Costs).Clear();
+
+		while (it.Next()) {
+			var transform = it.Field<GlobalTransform>(1);
+			foreach (int i in it) {
+				var pos = field.ToFieldPos(transform[i].Pos);
+				if (pos is null) continue;
+				field.Costs[field.ToKey(pos.Value)] = uint.MaxValue;
+				// TODO obstacles should also block neighboring cells if big enough
+			}
+		}
 	}
 
-	private record struct VisitEntry(Vec2I Pos, Vec2I Origin, Vector2 OriginDir);
-	// readonly Vec2I[] neighbors = [
-	// 	(-1, -1), (0, -1), (1, -1),
-	// 	(-1, 0), (1, 0),
-	// 	(-1, 1), (0, 1), (1, 1),
-	// ];
-	// Works without diagonals as well since it sums the previous force
-	static readonly Vec2I[] neighbors = [
-		(0, -1),
+	static readonly Vec2I[] neighbors = [(0, -1), (0, 1), (-1, 0), (1, 0)];
+	static readonly Vec2I[] neighborsDiag = [
+		(-1, -1), (0, -1), (1, -1),
 		(-1, 0), (1, 0),
-		(0, 1),
+		(-1, 1), (0, 1), (1, 1),
 	];
 
 	internal static void GenerateFlowField(ref FlowField field, ref GlobalTransform player) {
 		// TODO add line of sight
 		// TODO dont recalc on not moving
 		field.Origin = player.Pos;
-		var visited = new HashSet<Vec2I>();
-		var toVisit = new Queue<VisitEntry>([new VisitEntry((0, 0), (0, 0), Vector2.Zero)]);
+		Integration(ref field);
+		Flow(ref field);
+	}
+
+	private static void Integration(ref FlowField field) {
+		new Span<uint>(field.Integration).Fill(uint.MaxValue);
+		new Span<FlowField.CellFlags>(field.Flags).Clear();
+
+		var toVisit = new Queue<(Vec2I, uint)>([((0, 0), 0)]);
 		while (toVisit.Count > 0) {
-			var (current, origin, originDir) = toVisit.Dequeue();
-			visited.Add(current);
-			int key = field.ToKey(current);
-			Vector2 simpleDir = (origin - current).ToVector2();
-			Vector2 dir = simpleDir;
-			field.Field[key] = dir == Vector2.Zero ? dir : Vector2.Normalize(dir);
+			var (pos, accumCost) = toVisit.Dequeue();
+			uint key = field.ToKey(pos);
+			var myCost = field.Costs[key] + accumCost;
+			field.Integration[key] = myCost;
+
 			foreach (var n in neighbors) {
-				var pos = current + n;
-				if (Math.Abs(pos.X) > field.FieldWidth || Math.Abs(pos.Y) > field.FieldWidth)
+				var next = pos + n;
+				var nextKey = field.ToKeySafe(next);
+				if (
+					nextKey is null
+					|| field.Integration[nextKey.Value] <= myCost
+					|| field.Costs[nextKey.Value] == uint.MaxValue
+				)
 					continue;
-				if (visited.Contains(pos) || field.Obstacles.Contains(pos))
-					continue;
-				toVisit.Enqueue(new VisitEntry(pos, current, dir));
+				toVisit.Enqueue((next, myCost + 1));
 			}
+		}
+	}
+
+	private static void Flow(ref FlowField field) {
+		new Span<Vector2>(field.Flow).Fill(Vector2.Zero);
+		var toVisit = new Queue<Vec2I>([(0, 0)]);
+		while (toVisit.Count > 0) {
+			var pos = toVisit.Dequeue();
+			uint key = field.ToKey(pos);
+			Vec2I? cheapestPos = null;
+			uint cheapestCost = uint.MaxValue;
+			foreach (var neighbor in neighborsDiag) {
+				var next = pos + neighbor;
+				var nextKey = field.ToKeySafe(next);
+				if (nextKey is null)
+					continue;
+				uint nextInteg = field.Integration[nextKey.Value];
+				if (nextInteg < cheapestCost) {
+					cheapestCost = nextInteg;
+					cheapestPos = neighbor;
+				}
+				if (!field.Flags[nextKey.Value].HasFlag(FlowField.CellFlags.VisitedFlow)) {
+					toVisit.Enqueue(next);
+					field.Flags[nextKey.Value] |= FlowField.CellFlags.VisitedFlow;
+				}
+			}
+			field.Flow[key] = cheapestPos.GetValueOrDefault().ToVector2().NormalizedCopy();
 		}
 	}
 
@@ -82,8 +136,8 @@ class FlowFieldECS {
 		var batch = e.CsWorld().Get<RenderCtx>().SpriteBatch;
 		batch.Begin(transformMatrix: camera.GetTransformMatrix());
 
-		for (var i = -field.FieldWidth; i <= field.FieldWidth; i++)
-			for (var j = -field.FieldWidth; j <= field.FieldWidth; j++) {
+		for (var i = -field.SideWidth; i <= field.SideWidth; i++)
+			for (var j = -field.SideWidth; j <= field.SideWidth; j++) {
 				var cellCenter = new Vector2(i, j) * field.CellSize + field.Origin;
 				var cellCorner = cellCenter - field.CellCenterOffset;
 
@@ -92,14 +146,14 @@ class FlowFieldECS {
 				batch.DrawLine(cellCorner, cellCorner + Vector2.UnitX * field.CellSize, gridColor);
 				batch.DrawLine(cellCorner, cellCorner + Vector2.UnitY * field.CellSize, gridColor);
 
-				var vecKey = new Vec2I(i, j);
-				if (field.Obstacles.Contains(vecKey)) {
+				var pos = new Vec2I((int)i, (int)j);
+				if (field.Costs[field.ToKey(pos)] == uint.MaxValue) {
 					// Draw obstacle
 					batch.DrawLine(cellCorner, cellCorner + new Vector2(field.CellSize), HSL.Hsl(40, 0.5f, 0.75f, 1f), 2);
 					continue;
 				}
 				// Draw the force
-				var dir = field.Field[field.ToKey(vecKey)];
+				var dir = field.Flow[field.ToKey(pos)];
 				batch.DrawLine(cellCenter, cellCenter + dir * 20, HSL.Hsl(0, 0.5f, 0.5f, 1f));
 			}
 		batch.End();

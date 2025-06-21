@@ -1,6 +1,5 @@
 ## priority 1
-- enemies use flow field. Not sure if workign correctly and some alignment issues.
-  - Enemies don't seem to pathfind aroud obstacles correctly
+- enemies use flow field. needs LoS and accelerations, and some flocking behaviors
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure
 
 ## priority 2

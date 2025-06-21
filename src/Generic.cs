@@ -1,8 +1,11 @@
+using System;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 
 record struct Vec2I(int X, int Y) {
     public static implicit operator Vec2I((int, int) o) => new Vec2I(o.Item1, o.Item2);
+
+    public static readonly Vec2I Zero = new(0, 0);
 
     public Vector2 ToVector2() {
         return new Vector2(X, Y);
