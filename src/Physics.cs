@@ -76,6 +76,7 @@ class PhysicsModule : IFlecsModule {
             .Kind(Ecs.OnUpdate)
             .Read<SpatialMap>()
             .MultiThreaded()
+            .Immediate()
             .Run(HandleCollisions);
 
         world.System<Collider>()
