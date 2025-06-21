@@ -1,12 +1,13 @@
 ## priority 1
-- enemies use flow field
+- enemies use flow field. Not sure if workign correctly and some alignment issues.
+  - Enemies don't seem to pathfind aroud obstacles correctly
+- bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure
 
 ## priority 2
 - bug spread rotation is not centered
 - player health and death
-- add acceleration to movement
-- more weapon types
-- tilesets
+- add acceleration to movements
+- tilesets. Use Ldtk maybe
 - particle effects
 - animations sprite changes
 - animations tweens
@@ -16,6 +17,7 @@
 - ui
 - sound
 - better GlobalTransform using change detection on Transform https://www.flecs.dev/flecs/md_docs_2Queries.html#change-detection
+- more weapon types
 - roguelite powerups
 - menus
 - flocking behaviors

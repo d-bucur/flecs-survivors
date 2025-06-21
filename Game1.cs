@@ -20,6 +20,8 @@ public class Game1 : Game
 
     public Game1()
     {
+        // TODO resizing not working properly
+        Window.AllowUserResizing = true;
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
@@ -48,6 +50,7 @@ public class Game1 : Game
         _world.Import<PhysicsModule>();
         _world.Import<PlayerModule>();
         _world.Import<EnemiesModule>();
+        // Ecs.Log.SetLevel(1);
     }
 
     protected override void LoadContent()

@@ -30,6 +30,7 @@ record struct SpatialMap(float CellSize)
 	);
 }
 
+// TODO add collision data like directions
 record struct OnCollisionEnter(Entity Other);
 record struct OnCollisionExit(Entity Other);
 record struct OnCollisionStay(Entity Other);
@@ -95,7 +96,7 @@ class PhysicsModule : IFlecsModule
 
 		world.System<GlobalTransform, PhysicsBody, Collider>()
 			.Kind<RenderPhase>()
-			.Kind(Ecs.Disabled)
+			// .Kind(Ecs.Disabled)
 			.Iter(DebugColliders);
 	}
 
@@ -217,6 +218,7 @@ class PhysicsModule : IFlecsModule
 
 							distance.Normalize();
 							ref var b2 = ref e2.GetMut<PhysicsBody>();
+							// TODO if both 0 then div0
 							var totalBounce = b2.BounceCoeff + b1.BounceCoeff;
 							float b1Displacement = b1.BounceCoeff / totalBounce * penetration;
 							t1.Pos += distance * b1Displacement;
