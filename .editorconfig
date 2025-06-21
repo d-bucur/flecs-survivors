@@ -9,11 +9,5 @@
 
 #### Core EditorConfig Options ####
 
-# Indentation and spacing
-# indent_size = 4
-# indent_style = space
-# tab_width = 4
-
-csharp_new_line_before_open_brace = all
-# TODO enable in separate commit
-# csharp_new_line_before_open_brace = none
+# Stop this madness
+csharp_new_line_before_open_brace = none

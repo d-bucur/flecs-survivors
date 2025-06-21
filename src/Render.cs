@@ -9,106 +9,93 @@ namespace flecs_test;
 
 enum RenderPhase;
 
-record struct Camera(OrthographicCamera Value)
-{
-	Matrix? centerTranslation;
+record struct Camera(OrthographicCamera Value) {
+    Matrix? centerTranslation;
 
-	public Matrix GetTransformMatrix()
-	{
-		centerTranslation ??= Matrix.CreateTranslation(new Vector3(Value.Origin, 0));
-		return Value.GetViewMatrix() * centerTranslation.Value;
-	}
+    public Matrix GetTransformMatrix() {
+        centerTranslation ??= Matrix.CreateTranslation(new Vector3(Value.Origin, 0));
+        return Value.GetViewMatrix() * centerTranslation.Value;
+    }
 }
 record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch, GraphicsDevice GraphicsDevice, GameWindow Window);
-struct Sprite(string Path)
-{
-	public string Path = Path;
-	public Texture2D? Texture = null;
+struct Sprite(string Path) {
+    public string Path = Path;
+    public Texture2D? Texture = null;
 }
 
-public struct Render : IFlecsModule
-{
-	
-	Query<Camera> cameraQuery;
+public struct Render : IFlecsModule {
 
-	public unsafe void InitModule(World world)
-	{
-		cameraQuery = world.Query<Camera>();
+    Query<Camera> cameraQuery;
 
-		world.Observer<Sprite>()
-			.Event(Ecs.OnSet)
-			.Iter(LoadSprite);
-		world.System<Camera, GlobalTransform, Transform>()
-			.Kind(Ecs.PreUpdate)
-			.Each(UpdateCameraTransform);
-		world.System<GlobalTransform, Sprite>()
-			.Kind<RenderPhase>()
-			// monogame depth sorting is very finicky so do it here instead
-			// TODO full sorting on each frame is expensive. Maybe some way to cache a more stable list using change detection?
-			.OrderBy<GlobalTransform>(OrderSprites)
-			// flecs recommends rendering here. Not sure how to do that using monogame since Draw is separate
-			// .Kind(Ecs.OnStore) 
-			.Iter(RenderSprites);
+    public unsafe void InitModule(World world) {
+        cameraQuery = world.Query<Camera>();
 
-		world.System()
-			.With<Player>()
-			.Kind(Ecs.OnStart)
-			.Iter(InitCamera);
-	}
+        world.Observer<Sprite>()
+            .Event(Ecs.OnSet)
+            .Iter(LoadSprite);
+        world.System<Camera, GlobalTransform, Transform>()
+            .Kind(Ecs.PreUpdate)
+            .Each(UpdateCameraTransform);
+        world.System<GlobalTransform, Sprite>()
+            .Kind<RenderPhase>()
+            // monogame depth sorting is very finicky so do it here instead
+            // TODO full sorting on each frame is expensive. Maybe some way to cache a more stable list using change detection?
+            .OrderBy<GlobalTransform>(OrderSprites)
+            // flecs recommends rendering here. Not sure how to do that using monogame since Draw is separate
+            // .Kind(Ecs.OnStore) 
+            .Iter(RenderSprites);
 
-	private unsafe int OrderSprites(ulong e1, void* t1, ulong e2, void* t2)
-	{
-		var p1 = ((GlobalTransform*)t1)->Pos.Y;
-		var p2 = ((GlobalTransform*)t2)->Pos.Y;
-		return (int)((p1 - p2));
-	}
+        world.System()
+            .With<Player>()
+            .Kind(Ecs.OnStart)
+            .Iter(InitCamera);
+    }
 
-	static void InitCamera(Iter it)
-	{
-		var world = it.World();
-		var renderCtx = world.Get<RenderCtx>();
-		// TODO Use this when enabling window scaling
-		var viewportAdapter = new BoxingViewportAdapter(renderCtx.Window, renderCtx.GraphicsDevice, 800, 480);
-		var playerEntity = world.QueryBuilder<Transform>().With<Player>().Build().First();
-		world.Entity("Camera")
-			.Set(new Camera(new OrthographicCamera(viewportAdapter)))
-			.Set(new Transform(Vector2.Zero, Vector2.One))
-			.Set(new FollowTarget(playerEntity));
-	}
+    private unsafe int OrderSprites(ulong e1, void* t1, ulong e2, void* t2) {
+        var p1 = ((GlobalTransform*)t1)->Pos.Y;
+        var p2 = ((GlobalTransform*)t2)->Pos.Y;
+        return (int)((p1 - p2));
+    }
 
-	static void UpdateCameraTransform(ref Camera camera, ref GlobalTransform global, ref Transform t2)
-	{
-		camera.Value.Position = global.Pos;
-	}
+    static void InitCamera(Iter it) {
+        var world = it.World();
+        var renderCtx = world.Get<RenderCtx>();
+        // TODO Use this when enabling window scaling
+        var viewportAdapter = new BoxingViewportAdapter(renderCtx.Window, renderCtx.GraphicsDevice, 800, 480);
+        var playerEntity = world.QueryBuilder<Transform>().With<Player>().Build().First();
+        world.Entity("Camera")
+            .Set(new Camera(new OrthographicCamera(viewportAdapter)))
+            .Set(new Transform(Vector2.Zero, Vector2.One))
+            .Set(new FollowTarget(playerEntity));
+    }
 
-	static void LoadSprite(Iter it, Field<Sprite> sprite)
-	{
-		foreach (int i in it)
-		{
-			if (sprite[i].Texture is null)
-			{
-				sprite[i].Texture = it.World().Get<GameCtx>().Content.Load<Texture2D>(sprite[i].Path);
-			}
-		}
-	}
+    static void UpdateCameraTransform(ref Camera camera, ref GlobalTransform global, ref Transform t2) {
+        camera.Value.Position = global.Pos;
+    }
 
-	void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite)
-	{
-		var camera = cameraQuery.First().Get<Camera>();
-		var batch = it.World().Get<RenderCtx>().SpriteBatch;
-		batch.Begin(transformMatrix: camera.GetTransformMatrix());
-		var cutoffDistance = MathF.Pow(camera.Value.BoundingRectangle.Width, 2);
+    static void LoadSprite(Iter it, Field<Sprite> sprite) {
+        foreach (int i in it) {
+            if (sprite[i].Texture is null) {
+                sprite[i].Texture = it.World().Get<GameCtx>().Content.Load<Texture2D>(sprite[i].Path);
+            }
+        }
+    }
 
-		foreach (int i in it)
-		{
-			var t = transform[i];
-			// skip if too far away from camera
-			if ((t.Pos - camera.Value.Position).LengthSquared() > cutoffDistance) continue;
-			// pivot to bottom center of texture
-			// Texture is always set here. Ignore null
-			var offset = new Vector2(-sprite[i].Texture!.Width / 2, -sprite[i].Texture!.Height) * transform[i].Scale;
-			batch.Draw(sprite[i].Texture, t.Pos + offset, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, 0);
-		}
-		batch.End();
-	}
+    void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite) {
+        var camera = cameraQuery.First().Get<Camera>();
+        var batch = it.World().Get<RenderCtx>().SpriteBatch;
+        batch.Begin(transformMatrix: camera.GetTransformMatrix());
+        var cutoffDistance = MathF.Pow(camera.Value.BoundingRectangle.Width, 2);
+
+        foreach (int i in it) {
+            var t = transform[i];
+            // skip if too far away from camera
+            if ((t.Pos - camera.Value.Position).LengthSquared() > cutoffDistance) continue;
+            // pivot to bottom center of texture
+            // Texture is always set here. Ignore null
+            var offset = new Vector2(-sprite[i].Texture!.Width / 2, -sprite[i].Texture!.Height) * transform[i].Scale;
+            batch.Draw(sprite[i].Texture, t.Pos + offset, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, 0);
+        }
+        batch.End();
+    }
 }

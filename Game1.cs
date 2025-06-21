@@ -11,15 +11,13 @@ namespace flecs_test;
 
 record struct GameCtx(ContentManager Content);
 
-public class Game1 : Game
-{
+public class Game1 : Game {
     GraphicsDeviceManager _graphics;
     World _world;
     Pipeline _renderPipeline;
     SpriteBatch? _spriteBatch;
 
-    public Game1()
-    {
+    public Game1() {
         // TODO resizing not working properly
         Window.AllowUserResizing = true;
         _graphics = new GraphicsDeviceManager(this);
@@ -34,8 +32,7 @@ public class Game1 : Game
             .Build();
     }
 
-    protected override void Initialize()
-    {
+    protected override void Initialize() {
         base.Initialize();
 
         _spriteBatch = new(GraphicsDevice);
@@ -53,12 +50,10 @@ public class Game1 : Game
         // Ecs.Log.SetLevel(1);
     }
 
-    protected override void LoadContent()
-    {
+    protected override void LoadContent() {
     }
 
-    protected override void Update(GameTime gameTime)
-    {
+    protected override void Update(GameTime gameTime) {
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
         KeyboardExtended.Update();
@@ -69,8 +64,7 @@ public class Game1 : Game
         base.Update(gameTime);
     }
 
-    protected override void Draw(GameTime gameTime)
-    {
+    protected override void Draw(GameTime gameTime) {
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         _world.RunPipeline(_renderPipeline, (float)gameTime.ElapsedGameTime.TotalMilliseconds);
