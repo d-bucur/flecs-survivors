@@ -14,15 +14,23 @@ record struct FlowField(float CellSize, int FieldWidth = 10)
 {
 	internal Vector2 Origin; // Center of player
 	internal Vector2[] Field = new Vector2[(FieldWidth * 2 + 1) * (FieldWidth * 2 + 1)];
+	internal HashSet<Vec2I> Obstacles = new(20);
+	public Vector2 CellCenterOffset
+	{
+		get
+		{
+			// could cache
+			return Vector2.One * CellSize / 2;
+		}
+	}
 
 	public Vec2I? HashAt(Vector2 pos)
 	{
-		// TODO correct casts?
-		var x = (int)((pos.X - Origin.X) / CellSize);
-		var y = (int)((pos.Y - Origin.Y) / CellSize);
-		if (Math.Abs(x) > FieldWidth || MathF.Abs(y) > FieldWidth)
+		var fieldPos = (pos - Origin + CellCenterOffset) / CellSize;
+		var hash = new Vec2I((int)float.Floor(fieldPos.X), (int)float.Floor(fieldPos.Y));
+		if (Math.Abs(hash.X) > FieldWidth || MathF.Abs(hash.Y) > FieldWidth)
 			return null;
-		return new Vec2I(x, y);
+		return hash;
 	}
 
 	public int ToKey(Vec2I pos) // change to uint
@@ -35,14 +43,22 @@ class EnemiesModule : IFlecsModule
 {
 	public void InitModule(World world)
 	{
-		foreach (int i in Range(1, 5))
-		{
-			SpawnEnemy(ref world, new Vector2(100 * i, 20), 1);
-		}
 		world.Entity("EnemySpawner").Set(new EnemySpawner(1));
 
-		world.Set(new FlowField(60, 4));
+		world.Set(new FlowField(50, 7));
 
+		world.System<FlowField>()
+			.Kind(Ecs.PreUpdate)
+			.Each((ref FlowField field) => field.Obstacles.Clear());
+
+		world.System<FlowField, GlobalTransform>()
+			.TermAt(0).Singleton()
+			.With<Scenery>()
+			.Kind(Ecs.PreUpdate)
+			// .MultiThreaded()
+			.Each(BlockScenery);
+
+		// TODO can skip updating flow field every few frames
 		world.System<FlowField, GlobalTransform>()
 			.TermAt(0).Singleton()
 			.With<Player>()
@@ -58,6 +74,7 @@ class EnemiesModule : IFlecsModule
 			.With<Enemy>()
 			.TermAt(2).Singleton()
 			.Kind(Ecs.PreUpdate)
+			// .Kind(Ecs.Disabled)
 			.Iter(FollowPlayer);
 
 		world.System<EnemySpawner>()
@@ -66,8 +83,9 @@ class EnemiesModule : IFlecsModule
 			.Each(IncrementLevel);
 
 		world.System<EnemySpawner>()
-			.TickSource(world.Timer().Interval(500f))
+			.TickSource(world.Timer().Interval(300f))
 			.Kind(Ecs.PreUpdate)
+			// .Kind(Ecs.Disabled)
 			.Immediate()
 			.Iter(SpawnEnemies);
 
@@ -76,6 +94,15 @@ class EnemiesModule : IFlecsModule
 			.Event(Ecs.OnRemove)
 			.Each(HandleDeath);
 
+	}
+
+	private void BlockScenery(ref FlowField field, ref GlobalTransform transform)
+	{
+		// TODO obstacles should also block neighboring cells if big enough
+		var pos = field.HashAt(transform.Pos);
+		if (pos is null) return;
+		field.Obstacles.Add(pos.Value);
+		// Console.WriteLine($"Blocking at: {pos}");
 	}
 
 	private record struct VisitEntry(Vec2I Pos, Vec2I Origin, Vector2 OriginDir);
@@ -94,7 +121,6 @@ class EnemiesModule : IFlecsModule
 	private void GenerateFlowField(ref FlowField field, ref GlobalTransform player)
 	{
 		// TODO add line of sight
-		// TODO add obstacles
 		// TODO dont recalc on not moving
 		field.Origin = player.Pos;
 		var visited = new HashSet<Vec2I>();
@@ -105,7 +131,6 @@ class EnemiesModule : IFlecsModule
 			visited.Add(current);
 			int key = field.ToKey(current);
 			Vector2 simpleDir = (origin - current).ToVector2();
-			 // TODO zero check not needed?
 			Vector2 dir = simpleDir + originDir;
 			field.Field[key] = dir == Vector2.Zero ? dir : Vector2.Normalize(dir);
 			foreach (var n in neighbors)
@@ -113,7 +138,7 @@ class EnemiesModule : IFlecsModule
 				var pos = current + n;
 				if (Math.Abs(pos.X) > field.FieldWidth || Math.Abs(pos.Y) > field.FieldWidth)
 					continue;
-				if (visited.Contains(pos))
+				if (visited.Contains(pos) || field.Obstacles.Contains(pos))
 					continue;
 				toVisit.Enqueue(new VisitEntry(pos, current, dir));
 			}
@@ -129,15 +154,24 @@ class EnemiesModule : IFlecsModule
 		for (var i = -field.FieldWidth; i <= field.FieldWidth; i++)
 			for (var j = -field.FieldWidth; j <= field.FieldWidth; j++)
 			{
-				Vector2 start = field.Origin + new Vector2(i, j) * field.CellSize;
-				// Console.WriteLine($"Drawing {start}");
-				var dir = field.Field[field.ToKey(new Vec2I(i, j))];
-				batch.DrawLine(start, start + dir * 20, HSL.Hsl(0, 0.5f, 0.5f, 1f));
-
-				var startGrid = start - Vector2.One * (field.CellSize / 2);
+				var cellCenter = new Vector2(i, j) * field.CellSize + field.Origin;
+				var cellCorner = cellCenter - field.CellCenterOffset;
+				
+				// Draw the grid line
 				Color gridColor = HSL.Hsl(120, 0.5f, 0.5f, 1f);
-				batch.DrawLine(startGrid, startGrid + Vector2.UnitX * field.CellSize, gridColor);
-				batch.DrawLine(startGrid, startGrid + Vector2.UnitY * field.CellSize, gridColor);
+				batch.DrawLine(cellCorner, cellCorner + Vector2.UnitX * field.CellSize, gridColor);
+				batch.DrawLine(cellCorner, cellCorner + Vector2.UnitY * field.CellSize, gridColor);
+
+				var vecKey = new Vec2I(i, j);
+				if (field.Obstacles.Contains(vecKey))
+				{
+					// Draw obstacle
+					batch.DrawLine(cellCorner, cellCorner + new Vector2(field.CellSize), HSL.Hsl(40, 0.5f, 0.75f, 1f), 2);
+					continue;
+				}
+				// Draw the force
+				var dir = field.Field[field.ToKey(vecKey)];
+				batch.DrawLine(cellCenter, cellCenter + dir * 20, HSL.Hsl(0, 0.5f, 0.5f, 1f));
 			}
 		batch.End();
 	}
@@ -196,7 +230,7 @@ class EnemiesModule : IFlecsModule
 		var enemy = world.Entity()
 			.Add<Enemy>()
 			.Set(new Transform(pos, Vector2.One, 0))
-			.Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero))
+			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new Collider(17, Layers.ENEMY, Layers.ALL & ~Layers.POWERUP))
 			.Set(new Health((int)level))
 			.Observe<OnCollisionEnter>(HandleEnemyHit);

@@ -33,7 +33,7 @@ class Main : IFlecsModule
 {
 	public void InitModule(World world)
 	{
-		InitStaticScenery(ref world);
+		Level.InitLevel(ref world);
 
 		world.System<Shooter, GlobalTransform>()
 			.Kind(Ecs.PreUpdate)
@@ -165,30 +165,5 @@ class Main : IFlecsModule
 		health.Value -= 1;
 		e.Modified<Health>();
 		if (health.Value <= 0) e.Destruct();
-	}
-
-	private void InitStaticScenery(ref World world)
-	{
-		for (var i = -5; i < 6; i++)
-			for (var j = -5; j < 6; j++)
-			{
-				SpawnObstacle(ref world, new Vector2(
-					i * 300 + (Random.Shared.NextSingle() - 0.5f) * 300,
-					j * 300 + (Random.Shared.NextSingle() - 0.5f) * 300
-				));
-			}
-	}
-
-	private void SpawnObstacle(ref World world, Vector2 position)
-	{
-		Entity e = world.Entity()
-			.Add<Scenery>()
-			.Set(new Transform(position, Vector2.One, 0))
-			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0))
-			.Set(new Collider(25, Layers.SCENERY, Layers.ALL & ~Layers.POWERUP & ~Layers.SCENERY));
-		world.Entity()
-			.Set(new Transform(new Vector2(0, 30), new Vector2(1f, 1f), 0))
-			.Set(new Sprite("sprites/grassBlock"))
-			.ChildOf(e);
 	}
 }
