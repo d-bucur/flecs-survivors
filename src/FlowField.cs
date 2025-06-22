@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
@@ -64,6 +65,12 @@ class FlowFieldECS {
 		}
 	}
 
+	internal static void PathAroundEnemies(ref FlowField field, ref GlobalTransform transform) {
+		var pos = field.ToFieldPos(transform.Pos);
+		if (pos is null) return;
+		field.Costs[field.ToKey(pos.Value)] += 1;
+	}
+
 	static readonly Vec2I[] neighbors = [(0, -1), (0, 1), (-1, 0), (1, 0)];
 	static readonly Vec2I[] neighborsDiag = [
 		(-1, -1), (0, -1), (1, -1),
@@ -79,36 +86,35 @@ class FlowFieldECS {
 		Flow(ref field);
 	}
 
+	private static Queue<Vec2I> ToVisit = new(20);
 	private static void Integration(ref FlowField field) {
 		new Span<uint>(field.Integration).Fill(uint.MaxValue);
 		new Span<FlowField.CellFlags>(field.Flags).Clear();
 
-		var toVisit = new Queue<(Vec2I, uint)>([((0, 0), 0)]);
-		while (toVisit.Count > 0) {
-			var (pos, accumCost) = toVisit.Dequeue();
-			uint key = field.ToKey(pos);
-			var myCost = field.Costs[key] + accumCost;
-			field.Integration[key] = myCost;
+		ToVisit.Enqueue((0, 0));
+		while (ToVisit.Count > 0) {
+			var pos = ToVisit.Dequeue();
+			var myCost = field.Integration[field.ToKey(pos)];
 
 			foreach (var n in neighbors) {
 				var next = pos + n;
 				var nextKey = field.ToKeySafe(next);
-				if (
-					nextKey is null
-					|| field.Integration[nextKey.Value] <= myCost
-					|| field.Costs[nextKey.Value] == uint.MaxValue
-				)
+				if (nextKey is null || field.Costs[nextKey.Value] == uint.MaxValue)
 					continue;
-				toVisit.Enqueue((next, myCost + 1));
+				var newCost = myCost + 1 + field.Costs[nextKey.Value];
+				if (newCost < field.Integration[nextKey.Value]) {
+					ToVisit.Enqueue(next);
+					field.Integration[nextKey.Value] = newCost;
+				}
 			}
 		}
 	}
 
 	private static void Flow(ref FlowField field) {
 		new Span<Vector2>(field.Flow).Fill(Vector2.Zero);
-		var toVisit = new Queue<Vec2I>([(0, 0)]);
-		while (toVisit.Count > 0) {
-			var pos = toVisit.Dequeue();
+		ToVisit.Enqueue((0, 0));
+		while (ToVisit.Count > 0) {
+			var pos = ToVisit.Dequeue();
 			uint key = field.ToKey(pos);
 			Vec2I? cheapestPos = null;
 			uint cheapestCost = uint.MaxValue;
@@ -123,7 +129,7 @@ class FlowFieldECS {
 					cheapestPos = neighbor;
 				}
 				if (!field.Flags[nextKey.Value].HasFlag(FlowField.CellFlags.VisitedFlow)) {
-					toVisit.Enqueue(next);
+					ToVisit.Enqueue(next);
 					field.Flags[nextKey.Value] |= FlowField.CellFlags.VisitedFlow;
 				}
 			}

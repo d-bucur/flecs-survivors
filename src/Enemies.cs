@@ -23,6 +23,12 @@ class EnemiesModule : IFlecsModule {
 			.Kind(Ecs.PreUpdate)
 			.Run(FlowFieldECS.BlockScenery);
 
+		world.System<FlowField, GlobalTransform>()
+			.TermAt(0).Singleton()
+			.With<Enemy>()
+			.Kind(Ecs.PreUpdate)
+			.Each(FlowFieldECS.PathAroundEnemies);
+
 		// Could skip updating flow field every few frames
 		// or introduce a delay and have a pipeline of fields
 		world.System<FlowField, GlobalTransform>()
@@ -51,7 +57,7 @@ class EnemiesModule : IFlecsModule {
 		world.System<EnemySpawner>()
 			.TickSource(world.Timer().Interval(300f))
 			.Kind(Ecs.PreUpdate)
-			.Kind(Ecs.Disabled)
+			// .Kind(Ecs.Disabled)
 			.Immediate()
 			.Iter(SpawnEnemies);
 
