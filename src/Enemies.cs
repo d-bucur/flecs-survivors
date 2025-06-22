@@ -117,7 +117,7 @@ class EnemiesModule : IFlecsModule {
 			.Add<Enemy>()
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
-			.Set(new Collider(17, Layers.ENEMY, Layers.ALL & ~Layers.POWERUP))
+			.Set(new Collider(17, CollisionFlags.ENEMY, CollisionFlags.ALL & ~CollisionFlags.POWERUP))
 			.Set(new Health((int)level))
 			.Observe<OnCollisionEnter>(HandleEnemyHit);
 		var sprite = level switch {
@@ -140,7 +140,7 @@ class EnemiesModule : IFlecsModule {
 			.Set(new Transform(t.Pos, Vector2.One, 0))
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new DespawnTimed(30000f))
-			.Set(new Collider(15, Layers.POWERUP, Layers.PLAYER));
+			.Set(new Collider(15, CollisionFlags.POWERUP, CollisionFlags.PLAYER));
 		it.World().Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("sprites/slime"))

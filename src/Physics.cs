@@ -1,5 +1,3 @@
-global using CollisionMask = uint;
-
 using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using MonoGame.Extended;
@@ -9,12 +7,11 @@ using System.Collections.Concurrent;
 using System.Threading;
 using MonoGame.Extended.Collections;
 
-
 namespace flecs_test;
 
 enum Trigger;
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
-record struct Collider(float Radius, CollisionMask MyLayers = Layers.DEFAULT, CollisionMask MaskLayers = Layers.ALL) {
+record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DEFAULT, CollisionFlags MaskLayers = CollisionFlags.ALL) {
     public HashSet<Id> collisionsLastFrame = [];
     public HashSet<Id> collisionsCurrentFrame = [];
 }
@@ -35,14 +32,16 @@ record struct OnCollisionStay(Entity Other);
 
 record struct Heading(Vector2 Value);
 
-class Layers {
-    public const CollisionMask ALL = ~0u;
-    public const CollisionMask DEFAULT = 1 << 0;
-    public const CollisionMask PLAYER = 1 << 1;
-    public const CollisionMask ENEMY = 1 << 2;
-    public const CollisionMask PROJECTILE = 1 << 3;
-    public const CollisionMask POWERUP = 1 << 4;
-    public const CollisionMask SCENERY = 1 << 5;
+[Flags]
+public enum CollisionFlags {
+    NONE = 0,
+    DEFAULT = 1,
+    PLAYER = 2,
+    ENEMY = 4,
+    PROJECTILE = 8,
+    POWERUP = 16,
+    SCENERY = 32,
+    ALL = ~0,
 }
 
 class PhysicsModule : IFlecsModule {

@@ -127,7 +127,7 @@ class Main : IFlecsModule {
             .Set(new Transform(pos, Vector2.One, 0))
             .Set(new PhysicsBody(dir, Vector2.Zero))
             .Set(new DespawnTimed(5000f))
-            .Set(new Collider(17, Layers.PROJECTILE, Layers.ALL & ~Layers.POWERUP & ~Layers.PROJECTILE))
+            .Set(new Collider(17, CollisionFlags.PROJECTILE, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.PROJECTILE))
             .Set(new Health(2))
             .Observe<OnCollisionEnter>(HandleBulletHit);
         world.Entity()

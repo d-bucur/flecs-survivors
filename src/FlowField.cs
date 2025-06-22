@@ -9,7 +9,6 @@ namespace flecs_test;
 
 record struct FlowField(float CellSize, uint FullWidth) {
 	internal Vector2 Origin; // Center of player
-
 	internal readonly uint FullWidth = FullWidth;
 	internal readonly uint SideWidth = (FullWidth - 1) / 2;
 	internal readonly Vector2 CellCenterOffset = Vector2.One * CellSize / 2;
@@ -19,7 +18,6 @@ record struct FlowField(float CellSize, uint FullWidth) {
 	// Could be direction enum for optimization
 	internal Vector2[] Flow = new Vector2[FullWidth * FullWidth];
 
-	// TODO use Flags in physics layers
 	internal CellFlags[] Flags = new CellFlags[FullWidth * FullWidth];
 	[Flags]
 	public enum CellFlags {
@@ -80,7 +78,6 @@ class FlowFieldECS {
 
 	internal static void GenerateFlowField(ref FlowField field, ref GlobalTransform player) {
 		// TODO add line of sight
-		// TODO dont recalc on not moving
 		field.Origin = player.Pos;
 		Integration(ref field);
 		Flow(ref field);
