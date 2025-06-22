@@ -78,7 +78,9 @@ class EnemiesModule : IFlecsModule {
 
 	static void FollowPlayer(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<FlowField> flow) {
 		// Get Transform of Player and update all Enemy bodies to follow
-		const float SPEED = 1;
+		const float ACCEL = 0.1f;
+		const float SMOOTH_ACCEL_COEFF = 0.8f;
+
 		var query = it.World().QueryBuilder<Transform>().With<Player>().Build();
 		ref readonly var player = ref query.First().Get<Transform>();
 		var field = flow[0];
@@ -87,15 +89,16 @@ class EnemiesModule : IFlecsModule {
 		// TODO 
 		foreach (var i in it) {
 			var key = field.ToFieldPos(transform[i].Pos);
+			Vector2 force;
 			if (key is not null) {
-				var force = field.Flow[field.ToKey(key.Value)];
-				body[i].Vel = force * SPEED;
+				force = field.Flow[field.ToKey(key.Value)];
 			}
 			else { // outside of field. Use direct force towards player
-				var dir = player.Pos - transform[i].Pos;
-				if (dir != Vector2.Zero) dir.Normalize();
-				body[i].Vel = dir * SPEED;
+				force = player.Pos - transform[i].Pos;
+				if (force != Vector2.Zero) force.Normalize();
 			}
+			var smoothAccel = body[i].Accel * SMOOTH_ACCEL_COEFF + force * ACCEL * (1 - SMOOTH_ACCEL_COEFF);
+			body[i].Accel = smoothAccel;
 		}
 	}
 

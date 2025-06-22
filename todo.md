@@ -1,11 +1,11 @@
 ## priority 1
 - enemies use flow field. needs LoS and accelerations, and some flocking behaviors
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure
+- bug: wonky movement ever since added multithreading
 
 ## priority 2
 - bug spread rotation is not centered
 - player health and death
-- add acceleration to movements
 - tilesets. Use Ldtk maybe
 - particle effects
 - animations sprite changes

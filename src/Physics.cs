@@ -10,7 +10,7 @@ using MonoGame.Extended.Collections;
 namespace flecs_test;
 
 enum Trigger;
-record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1);
+record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1, float DragCoeff = 0.9f);
 record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DEFAULT, CollisionFlags MaskLayers = CollisionFlags.ALL) {
     public HashSet<Id> collisionsLastFrame = [];
     public HashSet<Id> collisionsCurrentFrame = [];
@@ -219,7 +219,11 @@ class PhysicsModule : IFlecsModule {
     }
 
     private void IntegratePosition(Entity e, ref Transform transform, ref PhysicsBody body) {
+        // Could use e.CsWorld().DeltaTime() to support variable time scale
+        body.Vel += body.Accel;
         transform.Pos += body.Vel;
+        // should probably do drag in a different step
+        body.Vel *= body.DragCoeff;
     }
 
     private void DebugColliders(Iter it, Field<GlobalTransform> transform, Field<PhysicsBody> body, Field<Collider> collider) {
