@@ -1,5 +1,7 @@
 ## priority 1
-- enemies use flow field. needs LoS and accelerations, and some flocking behaviors
+- spatial query for flocking
+- flow field LoS
+- flocking behaviors
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure
 - bug: wonky movement ever since added multithreading
 
@@ -19,7 +21,6 @@
 - more weapon types
 - roguelite powerups
 - menus
-- flocking behaviors
 - profiling
 - port to raylib?
   - https://github.com/raylib-cs/raylib-cs

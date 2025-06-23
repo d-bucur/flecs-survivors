@@ -8,6 +8,7 @@ using MonoGame.Extended.ViewportAdapters;
 namespace flecs_test;
 
 enum RenderPhase;
+enum PostRenderPhase;
 
 record struct Camera(OrthographicCamera Value) {
     Matrix? centerTranslation;

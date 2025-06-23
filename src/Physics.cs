@@ -9,6 +9,10 @@ using MonoGame.Extended.Collections;
 
 namespace flecs_test;
 
+enum PrePhysics;
+enum OnPhysics;
+enum PostPhysics;
+
 enum Trigger;
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1, float DragCoeff = 0.9f);
 record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DEFAULT, CollisionFlags MaskLayers = CollisionFlags.ALL) {
@@ -23,6 +27,15 @@ record struct SpatialMap(float CellSize) {
         (l) => l.Clear(),
         50
     );
+}
+// Does a sphere cast query
+record struct SpatialQuery(float Radius, Vector2 Center) {
+    public List<ulong> Results = new(10);
+    public void Prep(float Radius, Vector2 Center) {
+        this.Radius = Radius;
+        this.Center = Center;
+        Results.Clear();
+    }
 }
 
 // TODO add collision data like directions
@@ -47,15 +60,16 @@ public enum CollisionFlags {
 class PhysicsModule : IFlecsModule {
     public void InitModule(World world) {
         world.Set(new SpatialMap(30));
+        world.Set(new SpatialQuery());
 
         // TODO update to GlobalTransform
         world.System<Transform, PhysicsBody>()
-            .Kind(Ecs.OnUpdate)
+            .Kind<OnPhysics>()
             .MultiThreaded()
             .Each(IntegratePosition);
 
         world.System<SpatialMap>()
-            .Kind(Ecs.OnUpdate)
+            .Kind<OnPhysics>()
             .Each((ref SpatialMap s) => {
                 foreach (var (k, l) in s.Map)
                     s.pool.Free(l);
@@ -67,19 +81,19 @@ class PhysicsModule : IFlecsModule {
             .With<PhysicsBody>()
             .With<Collider>()
             .Write<SpatialMap>()
-            .Kind(Ecs.OnUpdate)
+            .Kind<OnPhysics>()
             .MultiThreaded()
             .Each(BuildSpatialHash);
 
         world.System()
-            .Kind(Ecs.OnUpdate)
+            .Kind<OnPhysics>()
             .Read<SpatialMap>()
             .MultiThreaded()
             .Immediate()
             .Run(HandleCollisions);
 
         world.System<Collider>()
-            .Kind(Ecs.OnUpdate)
+            .Kind<OnPhysics>()
             .MultiThreaded()
             .Each(EmitCollisionEvents);
 

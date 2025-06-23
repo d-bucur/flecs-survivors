@@ -24,8 +24,19 @@ public class Game1 : Game {
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
+        InitEcs();
+    }
+
+    private void InitEcs() {
         _world = World.Create();
 
+        // custom phases in between PreUpdate and OnUpdate
+        _world.Entity<PrePhysics>().Add(Ecs.Phase).DependsOn(Ecs.PreUpdate);
+        _world.Entity<OnPhysics>().Add(Ecs.Phase).DependsOn<PrePhysics>();
+        _world.Entity<PostPhysics>().Add(Ecs.Phase).DependsOn<OnPhysics>();
+        _world.Entity(Ecs.OnUpdate).DependsOn<PostPhysics>();
+
+        _world.Entity<PostRenderPhase>().Add(Ecs.Phase).DependsOn<RenderPhase>();
         _renderPipeline = _world.Pipeline()
             .With(Ecs.System)
             .With<RenderPhase>()
@@ -41,10 +52,10 @@ public class Game1 : Game {
         // _world.SetThreads(Environment.ProcessorCount);
         // _world.SetTaskThreads(Environment.ProcessorCount);
 
-        _world.Import<TransformsModule>();
         _world.Import<Render>();
-        _world.Import<Main>();
         _world.Import<PhysicsModule>();
+        _world.Import<TransformsModule>();
+        _world.Import<Main>();
         _world.Import<PlayerModule>();
         _world.Import<EnemiesModule>();
         // Ecs.Log.SetLevel(1);
@@ -70,5 +81,9 @@ public class Game1 : Game {
         _world.RunPipeline(_renderPipeline, (float)gameTime.ElapsedGameTime.TotalMilliseconds);
 
         base.Draw(gameTime);
+    }
+
+    public static void PrintSysName(Iter it) {
+        Console.WriteLine($"{it.System().Name()}");
     }
 }

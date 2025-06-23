@@ -19,14 +19,14 @@ class TransformsModule : IFlecsModule {
     public void InitModule(World world) {
         world.System<Transform>()
             .Without(Ecs.ChildOf)
-            .Kind(Ecs.PostUpdate) // TODO check this phase
+            .Kind<PostPhysics>() // TODO check this phase
             .Write<GlobalTransform>() // apply commands here
             .Each(CreateRootGlobals);
         // Can have some lag in updating GlobalTransform
         // Would be better to update reactively on Transforms
         world.System<Transform, GlobalTransform>()
             .TermAt(1).Parent().Cascade()
-            .Kind(Ecs.PostUpdate)
+            .Kind<PostPhysics>()
             .Write<GlobalTransform>() // redundant?
             .Each(PropagateTransforms);
     }

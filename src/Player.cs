@@ -13,13 +13,13 @@ record struct Controls() {
 }
 
 class PlayerModule : IFlecsModule {
-    const float PLAYER_ACCEL = 0.4f;
+    const float PLAYER_ACCEL = 0.6f;
 
     public void InitModule(World world) {
         Entity player = world.Entity("Player")
             .Add<Player>()
             .Set(new Transform(new Vector2(10, 20), Vector2.One, 0))
-            .Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f))
+            .Set(new PhysicsBody(new Vector2(1, 1), Vector2.Zero, 0.2f, 0.85f))
             .Set(new Collider(17, CollisionFlags.PLAYER, CollisionFlags.ALL & ~CollisionFlags.PROJECTILE))
             .Set(new Heading())
             .Set(new Shooter(new List<IBulletPattern>([Weapons.PresetWeak])))
@@ -35,12 +35,12 @@ class PlayerModule : IFlecsModule {
 
         world.System<PhysicsBody>()
             .With<Player>()
-            .Kind(Ecs.PreUpdate)
+            .Kind(Ecs.PostLoad)
             .Each(PlayerKeyInput);
 
         world.System<PhysicsBody, GlobalTransform>()
             .With<Player>()
-            .Kind(Ecs.PreUpdate)
+            .Kind(Ecs.PostLoad)
             .Each(PlayerMouseInput);
 
         world.Observer<PowerCollector, Shooter>()

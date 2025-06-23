@@ -49,7 +49,7 @@ class Main : IFlecsModule {
             .Iter(AttractPowerups);
 
         world.System<FollowTarget, Transform>()
-            .Kind(Ecs.PostUpdate)
+            .Kind(Ecs.PreStore)
             .Each(MoveFollowTargets);
 
         world.System()
