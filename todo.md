@@ -1,8 +1,6 @@
 ## priority 1
-- spatial query for flocking
 - flow field LoS
-- flocking behaviors
-- bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure
+- bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why
 - bug: wonky movement ever since added multithreading
 
 ## priority 2
@@ -26,4 +24,7 @@
   - https://github.com/raylib-cs/raylib-cs
   - https://github.com/MrScautHD/Raylib-CSharp
   - can probably be ported to web easier: https://github.com/Kiriller12/RaylibWasm
-- juice
+- juice:
+  - push back, flash, dmg indicator, particles
+  - rotate enemy away when dead
+  - camera shake when hit

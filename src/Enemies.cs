@@ -21,13 +21,13 @@ class EnemiesModule : IFlecsModule {
 			.TermAt(0).Singleton()
 			.With<Scenery>()
 			.Kind(Ecs.PreUpdate)
-			.Run(FlowFieldECS.BlockScenery);
+			.Run(FlowFieldECS.AddSceneryCost);
 
 		world.System<FlowField, GlobalTransform>()
 			.TermAt(0).Singleton()
 			.With<Enemy>()
 			.Kind(Ecs.PreUpdate)
-			.Each(FlowFieldECS.PathAroundEnemies);
+			.Each(FlowFieldECS.AddEnemyCost);
 
 		// Could skip updating flow field every few frames
 		// or introduce a delay and have a pipeline of fields
@@ -40,14 +40,22 @@ class EnemiesModule : IFlecsModule {
 
 		world.System<FlowField>()
 			.Kind<RenderPhase>()
+			.Kind(Ecs.Disabled)
 			.Each(FlowFieldECS.DebugFlowField);
+
+		world.System<GlobalTransform, PhysicsBody, SpatialQuery, SpatialMap>()
+			.TermAt(2).Singleton()
+			.TermAt(3).Singleton()
+			.With<Enemy>()
+			.Kind<OnPhysics>()
+			.Each(AddFlockingForces);
 
 		world.System<Transform, PhysicsBody, FlowField>()
 			.With<Enemy>()
 			.TermAt(2).Singleton()
 			.Kind(Ecs.PreUpdate)
 			// .Kind(Ecs.Disabled)
-			.Iter(FollowPlayer);
+			.Iter(UpdateEnemyAccel);
 
 		world.System<EnemySpawner>()
 			.TickSource(world.Timer().Interval(5000f))
@@ -76,7 +84,7 @@ class EnemiesModule : IFlecsModule {
 		Console.WriteLine($"Enemy levels: {spawner.Level}");
 	}
 
-	static void FollowPlayer(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<FlowField> flow) {
+	static void UpdateEnemyAccel(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<FlowField> flow) {
 		// Get Transform of Player and update all Enemy bodies to follow
 		const float ACCEL = 0.1f;
 		const float SMOOTH_ACCEL_COEFF = 0.8f;
@@ -154,6 +162,33 @@ class EnemiesModule : IFlecsModule {
 		if (!collision.Other.Has<Projectile>()) return;
 		// Console.WriteLine($"Hit by projectile: {entity} - {collision.Other}");
 		Main.DecreaseHealth(entity);
+	}
+
+	static void AddFlockingForces(Entity e, ref GlobalTransform enemy, ref PhysicsBody body, ref SpatialQuery query, ref SpatialMap map) {
+		const float SEPARATION_COEFF = 50f;
+		const float ALIGNMENT_COEFF = 0.1f;
+		const float MAX_ACCEL = 0.01f;
+
+		query.Prep(enemy.Pos, 10);
+		query.Execute(map);
+		Vector2 separation = Vector2.Zero;
+		Vector2 alignment = Vector2.Zero;
+
+		foreach (var neighId in query.Results) {
+			if (neighId == e.Id) continue;
+			var neigh = e.CsWorld().GetAlive(neighId);
+			if (!neigh.Has<Enemy>()) continue;
+			
+			var neighPos = neigh.Get<Transform>().Pos;
+			var dir = enemy.Pos - neighPos;
+			separation += dir / dir.LengthSquared();
+			var neighVel = neigh.Get<PhysicsBody>().Vel;
+			alignment += neighVel;
+		}
+		var flockingTotal = separation * SEPARATION_COEFF + alignment * ALIGNMENT_COEFF;
+		flockingTotal = flockingTotal.Truncate(MAX_ACCEL);
+
+		body.Accel += flockingTotal;
 	}
 	#endregion
 }

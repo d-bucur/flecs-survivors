@@ -47,7 +47,7 @@ record struct FlowField(float CellSize, uint FullWidth) {
 }
 
 class FlowFieldECS {
-	internal static void BlockScenery(Iter it) {
+	internal static void AddSceneryCost(Iter it) {
 		ref readonly var field = ref it.World().Get<FlowField>();
 		// Array.Fill<uint>(field.Costs, 0); // span should be faster than Array.Fill
 		new Span<uint>(field.Costs).Clear();
@@ -63,10 +63,10 @@ class FlowFieldECS {
 		}
 	}
 
-	internal static void PathAroundEnemies(ref FlowField field, ref GlobalTransform transform) {
+	internal static void AddEnemyCost(ref FlowField field, ref GlobalTransform transform) {
 		var pos = field.ToFieldPos(transform.Pos);
 		if (pos is null) return;
-		field.Costs[field.ToKey(pos.Value)] += 1;
+		field.Costs[field.ToKey(pos.Value)] += 2;
 	}
 
 	static readonly Vec2I[] neighbors = [(0, -1), (0, 1), (-1, 0), (1, 0)];

@@ -12,6 +12,7 @@ namespace flecs_test;
 
 record struct Shooter(List<IBulletPattern> Weapons, float Time = 0) {
     public Vector2? Target;
+    public bool Enabled = true;
 }
 record struct Projectile;
 record struct Scenery;
@@ -111,6 +112,8 @@ class Main : IFlecsModule {
     }
 
     static void ProcessShooters(Iter it, int i, ref Shooter shooter, ref Transform transform, ref Heading heading) {
+        if (!shooter.Enabled) return;
+        
         shooter.Time += it.DeltaTime();
         foreach (var weapon in shooter.Weapons) {
             var playerDir = heading.Value == Vector2.Zero ? Vector2.UnitX : Vector2.Normalize(heading.Value);

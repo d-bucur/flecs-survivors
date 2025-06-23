@@ -16,6 +16,11 @@ Too many physics phases? maybe physics at the end of Update
 Some inspiration from [unity phases](https://docs.unity3d.com/6000.0/Documentation/Manual/execution-order.html)
 
 # Dev
+## Hot reloading
+Start with hot reloading
+```
+dotnet watch
+```
 ## Errors
 Error handling inside systems doesn't work with .NET 9.0. Run with following to use old system that reports errors correctly 
 ```

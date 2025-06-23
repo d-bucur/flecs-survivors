@@ -33,7 +33,7 @@ class PlayerModule : IFlecsModule {
 
         world.Set(new Controls());
 
-        world.System<PhysicsBody>()
+        world.System<PhysicsBody, Shooter>()
             .With<Player>()
             .Kind(Ecs.PostLoad)
             .Each(PlayerKeyInput);
@@ -41,7 +41,7 @@ class PlayerModule : IFlecsModule {
         world.System<PhysicsBody, GlobalTransform>()
             .With<Player>()
             .Kind(Ecs.PostLoad)
-            .Each(PlayerMouseInput);
+            .Each(PlayerMouseInput);;
 
         world.Observer<PowerCollector, Shooter>()
             .Event(Ecs.OnSet)
@@ -66,8 +66,8 @@ class PlayerModule : IFlecsModule {
         // Console.WriteLine($"Power: {collector.Accumulated}");
     }
 
-    static void PlayerKeyInput(Entity e, ref PhysicsBody b) {
-        var state = Keyboard.GetState();
+    static void PlayerKeyInput(Entity e, ref PhysicsBody b, ref Shooter shooter) {
+        var state = KeyboardExtended.GetState();
         Vector2 dir = Vector2.Zero;
         if (state.IsKeyDown(Keys.D)) dir += new Vector2(1, 0);
         if (state.IsKeyDown(Keys.A)) dir += new Vector2(-1, 0);
@@ -75,6 +75,10 @@ class PlayerModule : IFlecsModule {
         if (state.IsKeyDown(Keys.W)) dir += new Vector2(0, -1);
         if (dir != Vector2.Zero) dir.Normalize();
         b.Accel = dir * PLAYER_ACCEL;
+
+        if (state.WasKeyPressed(Keys.Space)) {
+            shooter.Enabled = !shooter.Enabled;
+        }
     }
 
     static void PlayerMouseInput(Entity e, ref PhysicsBody b, ref GlobalTransform transform) {

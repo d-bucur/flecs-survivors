@@ -21,20 +21,48 @@ record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DE
 }
 record struct SpatialMap(float CellSize) {
     // Could try to profile HybridDictionary
-    public ConcurrentDictionary<(int, int), List<ulong>> Map = new(-1, 10);
+    public ConcurrentDictionary<Vec2I, List<ulong>> Map = new(-1, 10);
     public Pool<List<ulong>> pool = new(
         () => new List<ulong>(3),
         (l) => l.Clear(),
         50
     );
+
+    public readonly (int x, int y) PosToKey(Vector2 pos) {
+        var x = (int)MathF.Floor(pos.X / CellSize);
+        var y = (int)MathF.Floor(pos.Y / CellSize);
+        return (x, y);
+    }
 }
+
+// TODO API here is kinda weird
 // Does a sphere cast query
-record struct SpatialQuery(float Radius, Vector2 Center) {
+record struct SpatialQuery() {
+    float Radius = 0;
+    Vector2 Center = Vector2.Zero;
     public List<ulong> Results = new(10);
-    public void Prep(float Radius, Vector2 Center) {
+
+    public void Prep(Vector2 Center, float Radius) {
         this.Radius = Radius;
         this.Center = Center;
         Results.Clear();
+    }
+
+    static readonly Vec2I[] queryNeighbors = [
+        (-1, -1), (0, -1), (1, -1),
+        (-1, 0), (0, 0), (1, 0),
+        (-1, 1), (0, 1), (1, 1),
+    ];
+    public void Execute(SpatialMap map) {
+        // TODO not actually considering sphere and radius
+        var key = map.PosToKey(Center);
+
+        foreach (var n in queryNeighbors) {
+            var nk = key + n;
+            map.Map.TryGetValue(nk, out var tempResults);
+            if (tempResults is null) continue;
+            Results.AddRange(tempResults);
+        }
     }
 }
 
@@ -64,12 +92,12 @@ class PhysicsModule : IFlecsModule {
 
         // TODO update to GlobalTransform
         world.System<Transform, PhysicsBody>()
-            .Kind<OnPhysics>()
+            .Kind<PrePhysics>()
             .MultiThreaded()
             .Each(IntegratePosition);
 
         world.System<SpatialMap>()
-            .Kind<OnPhysics>()
+            .Kind<PrePhysics>()
             .Each((ref SpatialMap s) => {
                 foreach (var (k, l) in s.Map)
                     s.pool.Free(l);
@@ -81,9 +109,13 @@ class PhysicsModule : IFlecsModule {
             .With<PhysicsBody>()
             .With<Collider>()
             .Write<SpatialMap>()
-            .Kind<OnPhysics>()
+            .Kind<PrePhysics>()
             .MultiThreaded()
             .Each(BuildSpatialHash);
+        // Note: SpatialMap is only valid in between PrePhysics and PostPhysics where collion reponses
+        // can destroy entities. Pretty weak implementation since spatial queries can return invalid entities
+        // Maybe move it into Update so that entities are despawned only at this sync point
+        // and spatial queries are valid during Update
 
         world.System()
             .Kind<OnPhysics>()
@@ -93,7 +125,7 @@ class PhysicsModule : IFlecsModule {
             .Run(HandleCollisions);
 
         world.System<Collider>()
-            .Kind<OnPhysics>()
+            .Kind<PostPhysics>()
             .MultiThreaded()
             .Each(EmitCollisionEvents);
 
@@ -104,7 +136,7 @@ class PhysicsModule : IFlecsModule {
 
         world.System<GlobalTransform, PhysicsBody, Collider>()
             .Kind<RenderPhase>()
-            // .Kind(Ecs.Disabled)
+            .Kind(Ecs.Disabled)
             .Iter(DebugColliders);
     }
 
@@ -136,9 +168,7 @@ class PhysicsModule : IFlecsModule {
     }
 
     private void BuildSpatialHash(Entity e, ref Transform transform, ref SpatialMap map) {
-        var x = (int)(transform.Pos.X / map.CellSize);
-        var y = (int)(transform.Pos.Y / map.CellSize);
-        var key = (x, y);
+        var key = map.PosToKey(transform.Pos);
         map.Map.TryGetValue(key, out List<ulong>? val);
         val ??= map.pool.Obtain();
         val.Add(e.Id.Value);
@@ -146,7 +176,7 @@ class PhysicsModule : IFlecsModule {
     }
 
     // Only check down and right. Avoids deadlocking on mutex since corners will always release
-    readonly (int, int)[] _neighbors = [
+    static readonly Vec2I[] _neighbors = [
         (0, 0),(1, 0),
         (0, 1),(1, 1),
     ];
