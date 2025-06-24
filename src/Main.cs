@@ -135,7 +135,7 @@ class Main : IFlecsModule {
             .Observe<OnCollisionEnter>(HandleBulletHit);
         world.Entity()
             .Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
-            .Set(new Sprite("sprites/bee"))
+            .Set(new Sprite("Content/sprites/bee.png"))
             .ChildOf(bullet);
     }
 

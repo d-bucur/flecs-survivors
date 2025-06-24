@@ -48,7 +48,7 @@ class Level {
             .Set(new Collider(25, CollisionFlags.SCENERY, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.SCENERY));
         world.Entity()
             .Set(new Transform(new Vector2(0, 30), new Vector2(1f, 1f), 0))
-            .Set(new Sprite("sprites/grassBlock"))
+            .Set(new Sprite("Content/sprites/grassBlock.png"))
             .ChildOf(e);
     }
 }

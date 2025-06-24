@@ -1,24 +1,15 @@
-using Microsoft.Xna.Framework;
-using Flecs.NET.Core;
-using Microsoft.Xna.Framework.Graphics;
 using System;
-using MonoGame.Extended;
-using MonoGame.Extended.ViewportAdapters;
+using System.Numerics;
+using Flecs.NET.Core;
+using Raylib_cs;
 
 namespace flecs_test;
 
 enum RenderPhase;
 enum PostRenderPhase;
 
-record struct Camera(OrthographicCamera Value) {
-    Matrix? centerTranslation;
-
-    public Matrix GetTransformMatrix() {
-        centerTranslation ??= Matrix.CreateTranslation(new Vector3(Value.Origin, 0));
-        return Value.GetViewMatrix() * centerTranslation.Value;
-    }
-}
-record struct RenderCtx(GraphicsDeviceManager Graphics, SpriteBatch SpriteBatch, GraphicsDevice GraphicsDevice, GameWindow Window);
+record struct Camera(Camera2D Value, int ScreenWidth, int ScreenHeight);
+record struct RenderCtx(Vec2I WinSize);
 struct Sprite(string Path) {
     public string Path = Path;
     public Texture2D? Texture = null;
@@ -34,7 +25,7 @@ public struct Render : IFlecsModule {
         world.Observer<Sprite>()
             .Event(Ecs.OnSet)
             .Iter(LoadSprite);
-        world.System<Camera, GlobalTransform, Transform>()
+        world.System<Camera, GlobalTransform>()
             .Kind(Ecs.PreUpdate)
             .Each(UpdateCameraTransform);
         world.System<GlobalTransform, Sprite>()
@@ -61,42 +52,44 @@ public struct Render : IFlecsModule {
     static void InitCamera(Iter it) {
         var world = it.World();
         var renderCtx = world.Get<RenderCtx>();
-        // TODO Use this when enabling window scaling
-        var viewportAdapter = new BoxingViewportAdapter(renderCtx.Window, renderCtx.GraphicsDevice, 800, 480);
         var playerEntity = world.QueryBuilder<Transform>().With<Player>().Build().First();
+        var cameraOffset = renderCtx.WinSize / 2;
         world.Entity("Camera")
-            .Set(new Camera(new OrthographicCamera(viewportAdapter)))
+            .Set(new Camera(new Camera2D(cameraOffset.ToNumerics(), Vector2.Zero, 0, 1), 800, 480))
             .Set(new Transform(Vector2.Zero, Vector2.One))
             .Set(new FollowTarget(playerEntity));
     }
 
-    static void UpdateCameraTransform(ref Camera camera, ref GlobalTransform global, ref Transform t2) {
-        camera.Value.Position = global.Pos;
+    static void UpdateCameraTransform(ref Camera camera, ref GlobalTransform global) {
+        var cam = camera.Value;
+        cam.Target = global.Pos.ToNumerics();
+        camera.Value = cam;
     }
 
     static void LoadSprite(Iter it, Field<Sprite> sprite) {
         foreach (int i in it) {
             if (sprite[i].Texture is null) {
-                sprite[i].Texture = it.World().Get<GameCtx>().Content.Load<Texture2D>(sprite[i].Path);
+                // sprite[i].Texture = it.World().Get<GameCtx>().Content.Load<Texture2D>(sprite[i].Path);
+                // TODO cache textures in a dict
+                sprite[i].Texture = Raylib.LoadTexture(sprite[i].Path); ;
             }
         }
     }
 
     void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite) {
         var camera = cameraQuery.First().Get<Camera>();
-        var batch = it.World().Get<RenderCtx>().SpriteBatch;
-        batch.Begin(transformMatrix: camera.GetTransformMatrix());
-        var cutoffDistance = MathF.Pow(camera.Value.BoundingRectangle.Width, 2);
+        Raylib.BeginMode2D(camera.Value);
+        var cutoffDistance = MathF.Pow(camera.ScreenWidth, 2);
 
         foreach (int i in it) {
             var t = transform[i];
             // skip if too far away from camera
-            if ((t.Pos - camera.Value.Position).LengthSquared() > cutoffDistance) continue;
+            if ((t.Pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
             // pivot to bottom center of texture
-            // Texture is always set here. Ignore null
-            var offset = new Vector2(-sprite[i].Texture!.Width / 2, -sprite[i].Texture!.Height) * transform[i].Scale;
-            batch.Draw(sprite[i].Texture, t.Pos + offset, null, Color.White, t.Rot, Vector2.Zero, t.Scale, SpriteEffects.None, 0);
+            // TODO preload textures
+            var offset = new Vector2(-sprite[i].Texture!.Value.Width / 2, -sprite[i].Texture!.Value.Height) * transform[i].Scale;
+            Raylib.DrawTextureEx(sprite[i].Texture!.Value, t.Pos.ToNumerics() + offset.ToNumerics(), t.Rot, t.Scale.X, Color.White);
         }
-        batch.End();
+        Raylib.EndMode2D();
     }
 }

@@ -1,33 +1,35 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using Flecs.NET.Core;
-using Microsoft.Xna.Framework.Content;
-using MonoGame.Extended.Input;
-using System.Threading;
-using System;
+﻿using Flecs.NET.Core;
+using Raylib_cs;
 
 namespace flecs_test;
 
-record struct GameCtx(ContentManager Content);
+record struct GameCtx();
 
-public class Game1 : Game {
-    GraphicsDeviceManager _graphics;
+public class Program {
+    public static void Main() {
+        var winSize = new Vec2I(800, 480);
+        Raylib.InitWindow(winSize.X, winSize.Y, "Hello World");
+
+        Raylib.SetTargetFPS(60);
+
+        var game = new Game();
+
+        game.InitEcs(winSize);
+
+        while (!Raylib.WindowShouldClose()) {
+            game.Update();
+            game.Draw();
+        }
+
+        Raylib.CloseWindow();
+    }
+}
+
+public class Game {
     World _world;
     Pipeline _renderPipeline;
-    SpriteBatch? _spriteBatch;
 
-    public Game1() {
-        // TODO resizing not working properly
-        Window.AllowUserResizing = true;
-        _graphics = new GraphicsDeviceManager(this);
-        Content.RootDirectory = "Content";
-        IsMouseVisible = true;
-
-        InitEcs();
-    }
-
-    private void InitEcs() {
+    internal void InitEcs(Vec2I winSize) {
         _world = World.Create();
 
         // custom phases in between PreUpdate and OnUpdate
@@ -41,14 +43,8 @@ public class Game1 : Game {
             .With(Ecs.System)
             .With<RenderPhase>()
             .Build();
-    }
 
-    protected override void Initialize() {
-        base.Initialize();
-
-        _spriteBatch = new(GraphicsDevice);
-        _world.Set(new RenderCtx(_graphics, _spriteBatch, GraphicsDevice, Window));
-        _world.Set(new GameCtx(Content));
+        _world.Set(new RenderCtx(winSize));
         // _world.SetThreads(Environment.ProcessorCount);
         // _world.SetTaskThreads(Environment.ProcessorCount);
 
@@ -61,29 +57,14 @@ public class Game1 : Game {
         // Ecs.Log.SetLevel(1);
     }
 
-    protected override void LoadContent() {
+    internal void Update() {
+        _world.Progress(Raylib.GetFrameTime() * 1000);
     }
 
-    protected override void Update(GameTime gameTime) {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
-        KeyboardExtended.Update();
-        MouseExtended.Update();
-
-        _world.Progress((float)gameTime.ElapsedGameTime.TotalMilliseconds);
-
-        base.Update(gameTime);
-    }
-
-    protected override void Draw(GameTime gameTime) {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        _world.RunPipeline(_renderPipeline, (float)gameTime.ElapsedGameTime.TotalMilliseconds);
-
-        base.Draw(gameTime);
-    }
-
-    public static void PrintSysName(Iter it) {
-        Console.WriteLine($"{it.System().Name()}");
+    internal void Draw() {
+        Raylib.BeginDrawing();
+        Raylib.ClearBackground(Color.DarkBlue);
+        _world.RunPipeline(_renderPipeline, Raylib.GetFrameTime() * 1000);
+        Raylib.EndDrawing();
     }
 }

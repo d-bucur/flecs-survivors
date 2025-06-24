@@ -1,9 +1,8 @@
 using Flecs.NET.Core;
-using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
-using MonoGame.Extended.Input;
+using Raylib_cs;
+using System.Numerics;
 
 namespace flecs_test;
 
@@ -27,7 +26,7 @@ class PlayerModule : IFlecsModule {
             .Observe<OnCollisionEnter>(HandlePowerCollected);
         world.Entity()
             .Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
-            .Set(new Sprite("sprites/alienGreen_walk1"))
+            .Set(new Sprite("Content/sprites/alienGreen_walk1.png"))
             .ChildOf(player);
         Console.WriteLine($"Player: {player.Id.Value}");
 
@@ -67,30 +66,30 @@ class PlayerModule : IFlecsModule {
     }
 
     static void PlayerKeyInput(Entity e, ref PhysicsBody b, ref Shooter shooter) {
-        var state = KeyboardExtended.GetState();
         Vector2 dir = Vector2.Zero;
-        if (state.IsKeyDown(Keys.D)) dir += new Vector2(1, 0);
-        if (state.IsKeyDown(Keys.A)) dir += new Vector2(-1, 0);
-        if (state.IsKeyDown(Keys.S)) dir += new Vector2(0, 1);
-        if (state.IsKeyDown(Keys.W)) dir += new Vector2(0, -1);
-        if (dir != Vector2.Zero) dir.Normalize();
+        if (Raylib.IsKeyDown(KeyboardKey.D)) dir += new Vector2(1, 0);
+        if (Raylib.IsKeyDown(KeyboardKey.A)) dir += new Vector2(-1, 0);
+        if (Raylib.IsKeyDown(KeyboardKey.S)) dir += new Vector2(0, 1);
+        if (Raylib.IsKeyDown(KeyboardKey.W)) dir += new Vector2(0, -1);
+        if (dir != Vector2.Zero) Vector2.Normalize(dir);
         b.Accel = dir * PLAYER_ACCEL;
 
-        if (state.WasKeyPressed(Keys.Space)) {
+        if (Raylib.IsKeyPressed(KeyboardKey.Space)) {
             shooter.Enabled = !shooter.Enabled;
         }
     }
 
     static void PlayerMouseInput(Entity e, ref PhysicsBody b, ref GlobalTransform transform) {
-        var mouseState = MouseExtended.GetState();
         ref bool mouseMovementEnabled = ref e.CsWorld().GetMut<Controls>().MouseMovementEnabled;
-        if (mouseState.WasButtonPressed(MouseButton.Left)) mouseMovementEnabled = !mouseMovementEnabled;
+        if (Raylib.IsMouseButtonPressed(MouseButton.Left)) mouseMovementEnabled = !mouseMovementEnabled;
         if (!mouseMovementEnabled) return;
 
         var camera = e.CsWorld().Query<Camera>().First().Get<Camera>();
-        var mousePosWorld = camera.Value.ScreenToWorld(new Vector2(mouseState.X, mouseState.Y) - camera.Value.Origin);
+        var screenPos = Raylib.GetMousePosition();
+        var mousePosWorld = Raylib.GetScreenToWorld2D(screenPos, camera.Value);
+
         const int DIST_TO_MAX_SPEED = 150;
-        Vector2 dir = (mousePosWorld - transform.Pos) / DIST_TO_MAX_SPEED;
+        Vector2 dir = (mousePosWorld - transform.Pos.ToNumerics()) / DIST_TO_MAX_SPEED;
         if (dir.Length() > 1) dir = Vector2.Normalize(dir);
         b.Accel = dir * PLAYER_ACCEL;
     }

@@ -4,6 +4,7 @@ using System.Linq;
 using Flecs.NET.Core;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
+using Raylib_cs;
 
 namespace flecs_test;
 
@@ -135,9 +136,9 @@ class FlowFieldECS {
 	}
 
 	internal static void DebugFlowField(Entity e, ref FlowField field) {
+		// TODO rewrite with raylib
 		var camera = e.CsWorld().Query<Camera>().First().Get<Camera>();
-		var batch = e.CsWorld().Get<RenderCtx>().SpriteBatch;
-		batch.Begin(transformMatrix: camera.GetTransformMatrix());
+		Raylib.BeginMode2D(camera.Value);
 
 		for (var i = -field.SideWidth; i <= field.SideWidth; i++)
 			for (var j = -field.SideWidth; j <= field.SideWidth; j++) {
@@ -145,20 +146,20 @@ class FlowFieldECS {
 				var cellCorner = cellCenter - field.CellCenterOffset;
 
 				// Draw the grid line
-				Color gridColor = HSL.Hsl(120, 0.5f, 0.5f, 1f);
-				batch.DrawLine(cellCorner, cellCorner + Vector2.UnitX * field.CellSize, gridColor);
-				batch.DrawLine(cellCorner, cellCorner + Vector2.UnitY * field.CellSize, gridColor);
+				// Color gridColor = HSL.Hsl(120, 0.5f, 0.5f, 1f);
+				// batch.DrawLine(cellCorner, cellCorner + Vector2.UnitX * field.CellSize, gridColor);
+				// batch.DrawLine(cellCorner, cellCorner + Vector2.UnitY * field.CellSize, gridColor);
 
-				var pos = new Vec2I((int)i, (int)j);
-				if (field.Costs[field.ToKey(pos)] == uint.MaxValue) {
-					// Draw obstacle
-					batch.DrawLine(cellCorner, cellCorner + new Vector2(field.CellSize), HSL.Hsl(40, 0.5f, 0.75f, 1f), 2);
-					continue;
-				}
-				// Draw the force
-				var dir = field.Flow[field.ToKey(pos)];
-				batch.DrawLine(cellCenter, cellCenter + dir * 20, HSL.Hsl(0, 0.5f, 0.5f, 1f));
+				// var pos = new Vec2I((int)i, (int)j);
+				// if (field.Costs[field.ToKey(pos)] == uint.MaxValue) {
+				// 	// Draw obstacle
+				// 	batch.DrawLine(cellCorner, cellCorner + new Vector2(field.CellSize), HSL.Hsl(40, 0.5f, 0.75f, 1f), 2);
+				// 	continue;
+				// }
+				// // Draw the force
+				// var dir = field.Flow[field.ToKey(pos)];
+				// batch.DrawLine(cellCenter, cellCenter + dir * 20, HSL.Hsl(0, 0.5f, 0.5f, 1f));
 			}
-		batch.End();
+		Raylib.EndMode2D();
 	}
 }

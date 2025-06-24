@@ -132,10 +132,10 @@ class EnemiesModule : IFlecsModule {
 			.Set(new Health((int)level))
 			.Observe<OnCollisionEnter>(HandleEnemyHit);
 		var sprite = level switch {
-			1 => "sprites/alienBeige_walk1",
-			2 => "sprites/alienYellow_walk1",
-			3 => "sprites/alienBlue_walk1",
-			_ => "sprites/alienPink_walk1",
+			1 => "Content/sprites/alienBeige_walk1.png",
+			2 => "Content/sprites/alienYellow_walk1.png",
+			3 => "Content/sprites/alienBlue_walk1.png",
+			_ => "Content/sprites/alienPink_walk1.png",
 		};
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
@@ -154,7 +154,7 @@ class EnemiesModule : IFlecsModule {
 			.Set(new Collider(15, CollisionFlags.POWERUP, CollisionFlags.PLAYER));
 		it.World().Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
-			.Set(new Sprite("sprites/slime"))
+			.Set(new Sprite("Content/sprites/slime.png"))
 			.ChildOf(power);
 	}
 

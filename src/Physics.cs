@@ -271,16 +271,17 @@ class PhysicsModule : IFlecsModule {
     }
 
     private void DebugColliders(Iter it, Field<GlobalTransform> transform, Field<PhysicsBody> body, Field<Collider> collider) {
-        var camera = it.World().Query<Camera>().First().Get<Camera>();
-        var batch = it.World().Get<RenderCtx>().SpriteBatch;
-        batch.Begin(transformMatrix: camera.GetTransformMatrix());
-        foreach (int i in it) {
-            var hue = 0f;
-            if (it.Entity(i).Has<Trigger>()) hue = 200f;
-            Color color = new(new HslColor(hue, 0.8f, 0.5f).ToRgb(), 0.5f);
-            batch.DrawCircle(transform[i].Pos, collider[i].Radius, 10, color);
-            batch.DrawLine(transform[i].Pos, transform[i].Pos + body[i].Vel * 10, Color.Green);
-        }
-        batch.End();
+        // TODO rewrite with raylib
+        // var camera = it.World().Query<Camera>().First().Get<Camera>();
+        // var batch = it.World().Get<RenderCtx>().SpriteBatch;
+        // batch.Begin(transformMatrix: camera.GetTransformMatrix());
+        // foreach (int i in it) {
+        //     var hue = 0f;
+        //     if (it.Entity(i).Has<Trigger>()) hue = 200f;
+        //     Color color = new(new HslColor(hue, 0.8f, 0.5f).ToRgb(), 0.5f);
+        //     batch.DrawCircle(transform[i].Pos, collider[i].Radius, 10, color);
+        //     batch.DrawLine(transform[i].Pos, transform[i].Pos + body[i].Vel * 10, Color.Green);
+        // }
+        // batch.End();
     }
 }
