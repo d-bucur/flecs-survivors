@@ -1,4 +1,6 @@
-﻿using Flecs.NET.Core;
+﻿using System;
+using System.Numerics;
+using Flecs.NET.Core;
 using Raylib_cs;
 
 namespace flecs_test;
@@ -9,10 +11,12 @@ public class Program {
     public static void Main() {
         var winSize = new Vec2I(800, 480);
         Raylib.InitWindow(winSize.X, winSize.Y, "Hello World");
+        Raylib.SetWindowState(ConfigFlags.ResizableWindow);
+        Raylib.SetWindowMinSize(winSize.X, winSize.Y);
 
         Raylib.SetTargetFPS(60);
 
-        var game = new Game();
+        var game = new Game(winSize);
 
         game.InitEcs(winSize);
 
@@ -28,6 +32,17 @@ public class Program {
 public class Game {
     World _world;
     Pipeline _renderPipeline;
+    Vec2I _winSize;
+
+    Rectangle source;
+    RenderTexture2D frameBuffer;
+
+    internal Game(Vec2I winSize) {
+        _winSize = winSize;
+        source = new Rectangle(0, 0, winSize.X, -winSize.Y);
+        frameBuffer = Raylib.LoadRenderTexture(_winSize.X, _winSize.Y);
+        Raylib.SetTextureFilter(frameBuffer.Texture, TextureFilter.Bilinear);
+    }
 
     internal void InitEcs(Vec2I winSize) {
         _world = World.Create();
@@ -62,9 +77,25 @@ public class Game {
     }
 
     internal void Draw() {
-        Raylib.BeginDrawing();
+        Raylib.BeginTextureMode(frameBuffer);
         Raylib.ClearBackground(Color.DarkBlue);
         _world.RunPipeline(_renderPipeline, Raylib.GetFrameTime() * 1000);
+        Raylib.EndTextureMode();
+
+        // TODO some issues. Resizing window doesn't update screen width (at least on linux)
+        // need to do virtual mouse too
+        // https://www.raylib.com/examples/core/loader.html?name=core_window_letterbox
+        var scale = MathF.Min(Raylib.GetScreenWidth() / _winSize.X, Raylib.GetScreenHeight() / _winSize.Y);
+        var dest = new Rectangle(
+            // Not centered
+            0, 0,
+            _winSize.X * scale,
+            _winSize.Y * scale
+        );
+
+        Raylib.BeginDrawing();
+        Raylib.ClearBackground(Color.Black);
+        Raylib.DrawTexturePro(frameBuffer.Texture, source, dest, Vector2.Zero, 0, Color.White);
         Raylib.EndDrawing();
     }
 }

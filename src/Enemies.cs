@@ -37,7 +37,7 @@ class EnemiesModule : IFlecsModule {
 
 		world.System<FlowField>()
 			.Kind<RenderPhase>()
-			.Kind(Ecs.Disabled)
+			// .Kind(Ecs.Disabled)
 			.Each(FlowFieldECS.DebugFlowField);
 
 		world.System<GlobalTransform, PhysicsBody, SpatialQuery, SpatialMap>()

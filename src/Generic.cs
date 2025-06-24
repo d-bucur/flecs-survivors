@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using Flecs.NET.Core;
+using Raylib_cs;
 
 record struct Vec2I(int X, int Y) {
     public static implicit operator Vec2I((int, int) o) => new Vec2I(o.Item1, o.Item2);
@@ -34,11 +35,10 @@ record struct Vec2I(int X, int Y) {
 }
 
 
-public class HSL {
-    // Was this so hard monogame????
-    // public static Color Hsl(float h, float s, float l, float a = 1f) {
-    //     return new Color(new HslColor(h, s, l).ToRgb(), a);
-    // }
+public class HSV {
+    public static Color Hsv(float h, float s, float v, float a = 1f) {
+        return Raylib.ColorAlpha(Raylib.ColorFromHSV(h, s, v), a);
+    }
 }
 
 static class Helpers {

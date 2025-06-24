@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using MonoGame.Extended.Collections;
 using System.Numerics;
+using Raylib_cs;
 
 namespace flecs_test;
 
@@ -135,7 +136,7 @@ class PhysicsModule : IFlecsModule {
 
         world.System<GlobalTransform, PhysicsBody, Collider>()
             .Kind<RenderPhase>()
-            .Kind(Ecs.Disabled)
+            // .Kind(Ecs.Disabled)
             .Iter(DebugColliders);
     }
 
@@ -270,17 +271,15 @@ class PhysicsModule : IFlecsModule {
     }
 
     private void DebugColliders(Iter it, Field<GlobalTransform> transform, Field<PhysicsBody> body, Field<Collider> collider) {
-        // TODO rewrite with raylib
-        // var camera = it.World().Query<Camera>().First().Get<Camera>();
-        // var batch = it.World().Get<RenderCtx>().SpriteBatch;
-        // batch.Begin(transformMatrix: camera.GetTransformMatrix());
-        // foreach (int i in it) {
-        //     var hue = 0f;
-        //     if (it.Entity(i).Has<Trigger>()) hue = 200f;
-        //     Color color = new(new HslColor(hue, 0.8f, 0.5f).ToRgb(), 0.5f);
-        //     batch.DrawCircle(transform[i].Pos, collider[i].Radius, 10, color);
-        //     batch.DrawLine(transform[i].Pos, transform[i].Pos + body[i].Vel * 10, Color.Green);
-        // }
-        // batch.End();
+        var camera = it.World().Query<Camera>().First().Get<Camera>();
+        Raylib.BeginMode2D(camera.Value);
+        foreach (int i in it) {
+            var hue = 0f;
+            if (it.Entity(i).Has<Trigger>()) hue = 200f;
+            Color color = HSV.Hsv(hue, 0.8f, 1f, 0.5f);
+            Raylib.DrawCircleLinesV(transform[i].Pos, collider[i].Radius, color);
+            Raylib.DrawLineV(transform[i].Pos, transform[i].Pos + body[i].Vel * 10, Color.Green);
+        }
+        Raylib.EndMode2D();
     }
 }
