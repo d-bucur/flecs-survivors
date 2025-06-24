@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Flecs.NET.Core;
 using Raylib_cs;
@@ -14,6 +15,21 @@ struct Sprite(string Path) {
     public string Path = Path;
     public Texture2D? Texture = null;
 }
+record struct Content {
+    Dictionary<string, Texture2D> Textures;
+    public Content() {
+        Textures = new();
+    }
+
+    public Texture2D Load(string path) {
+        if (Textures.TryGetValue(path, out var ret)) {
+            return ret;
+        }
+        ret = Raylib.LoadTexture(path);
+        Textures[path] = ret;
+        return ret;
+    }
+}
 
 public struct Render : IFlecsModule {
 
@@ -21,10 +37,12 @@ public struct Render : IFlecsModule {
 
     public unsafe void InitModule(World world) {
         cameraQuery = world.Query<Camera>();
+        world.Set(new Content());
 
-        world.Observer<Sprite>()
+        world.Observer<Sprite, Content>()
             .Event(Ecs.OnSet)
-            .Iter(LoadSprite);
+            .TermAt(1).Singleton()
+            .Each(LoadSprite);
         world.System<Camera, GlobalTransform>()
             .Kind(Ecs.PreUpdate)
             .Each(UpdateCameraTransform);
@@ -66,14 +84,8 @@ public struct Render : IFlecsModule {
         camera.Value = cam;
     }
 
-    static void LoadSprite(Iter it, Field<Sprite> sprite) {
-        foreach (int i in it) {
-            if (sprite[i].Texture is null) {
-                // sprite[i].Texture = it.World().Get<GameCtx>().Content.Load<Texture2D>(sprite[i].Path);
-                // TODO cache textures in a dict
-                sprite[i].Texture = Raylib.LoadTexture(sprite[i].Path); ;
-            }
-        }
+    static void LoadSprite(ref Sprite sprite, ref Content content) {
+        sprite.Texture ??= content.Load(sprite.Path);
     }
 
     void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite) {
