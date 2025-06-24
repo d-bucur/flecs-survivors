@@ -89,7 +89,7 @@ class PlayerModule : IFlecsModule {
         var mousePosWorld = Raylib.GetScreenToWorld2D(screenPos, camera.Value);
 
         const int DIST_TO_MAX_SPEED = 150;
-        Vector2 dir = (mousePosWorld - transform.Pos.ToNumerics()) / DIST_TO_MAX_SPEED;
+        Vector2 dir = (mousePosWorld - transform.Pos) / DIST_TO_MAX_SPEED;
         if (dir.Length() > 1) dir = Vector2.Normalize(dir);
         b.Accel = dir * PLAYER_ACCEL;
     }

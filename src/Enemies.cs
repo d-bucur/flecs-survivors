@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
+using System.Numerics;
 using Flecs.NET.Core;
-using Microsoft.Xna.Framework;
-using static System.Linq.Enumerable;
-using MonoGame.Extended;
 
 namespace flecs_test;
 
@@ -103,7 +100,7 @@ class EnemiesModule : IFlecsModule {
 			}
 			else { // outside of field. Use direct force towards player
 				force = player.Pos - transform[i].Pos;
-				if (force != Vector2.Zero) force.Normalize();
+				if (force != Vector2.Zero) force = Vector2.Normalize(force);
 			}
 			var smoothAccel = body[i].Accel * SMOOTH_ACCEL_COEFF + force * ACCEL * (1 - SMOOTH_ACCEL_COEFF);
 			body[i].Accel = smoothAccel;
@@ -118,7 +115,7 @@ class EnemiesModule : IFlecsModule {
 
 		foreach (var i in it) {
 			var angle = Random.Shared.NextSingle() * MathF.PI * 2;
-			var pos = Vector2.Rotate(Vector2.UnitX, angle) * RADIUS + playerTransform.Pos;
+			var pos = Vector2.UnitX.Rotate(angle) * RADIUS + playerTransform.Pos;
 			SpawnEnemy(ref world, pos, spawner[i].Level);
 		}
 	}
@@ -186,7 +183,7 @@ class EnemiesModule : IFlecsModule {
 			alignment += neighVel;
 		}
 		var flockingTotal = separation * SEPARATION_COEFF + alignment * ALIGNMENT_COEFF;
-		flockingTotal = flockingTotal.Truncate(MAX_ACCEL);
+		flockingTotal = flockingTotal.Truncated(MAX_ACCEL);
 
 		body.Accel += flockingTotal;
 	}

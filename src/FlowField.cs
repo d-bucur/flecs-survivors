@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Numerics;
 using Flecs.NET.Core;
-using Microsoft.Xna.Framework;
-using MonoGame.Extended;
 using Raylib_cs;
 
 namespace flecs_test;
@@ -131,7 +129,7 @@ class FlowFieldECS {
 					field.Flags[nextKey.Value] |= FlowField.CellFlags.VisitedFlow;
 				}
 			}
-			field.Flow[key] = cheapestPos.GetValueOrDefault().ToVector2().NormalizedCopy();
+			field.Flow[key] = cheapestPos.GetValueOrDefault().ToVector2().Normalized();
 		}
 	}
 

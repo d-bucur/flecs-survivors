@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+using System.Numerics;
 using static System.Linq.Enumerable;
 
 namespace flecs_test;
@@ -75,7 +75,7 @@ record struct UniformRotatingPattern(
         var rotationCentered = rotation - scatterAngle / 2 + MathF.Atan2(targetDirection.Y, targetDirection.X);
         var deltaAngle = scatterAngle / bulletsPerShot;
         foreach (var i in Range(0, (int)bulletsPerShot)) {
-            var dir = Vector2.Rotate(Vector2.UnitX, rotationCentered + deltaAngle * i);
+            var dir = Vector2.UnitX.Rotate(rotationCentered + deltaAngle * i);
             bulletData.Add(new BulletData(dir * bulletSpeed, Vector2.Zero));
         }
 

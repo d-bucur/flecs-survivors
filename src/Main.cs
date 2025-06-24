@@ -1,9 +1,7 @@
-using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
 using System;
 using System.Collections.Generic;
-using MonoGame.Extended;
-using static System.Linq.Enumerable;
+using System.Numerics;
 
 namespace flecs_test;
 
@@ -100,7 +98,7 @@ class Main : IFlecsModule {
             Vector2 dist = collector.Pos - transform[i].Pos;
             if (dist.LengthSquared() >= rangeSq) continue;
 
-            dist.Normalize();
+            dist = Vector2.Normalize(dist);
             body[i].Vel = dist * SPEED;
         }
     }

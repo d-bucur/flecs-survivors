@@ -1,6 +1,6 @@
 using System;
+using System.Numerics;
 using Flecs.NET.Core;
-using Microsoft.Xna.Framework;
 
 namespace flecs_test;
 

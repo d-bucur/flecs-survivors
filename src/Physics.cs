@@ -1,11 +1,10 @@
-using Microsoft.Xna.Framework;
 using Flecs.NET.Core;
-using MonoGame.Extended;
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
 using MonoGame.Extended.Collections;
+using System.Numerics;
 
 namespace flecs_test;
 
@@ -242,7 +241,7 @@ class PhysicsModule : IFlecsModule {
                             if (e1.Has<Trigger>() || e2.Has<Trigger>())
                                 continue;
 
-                            distance.Normalize();
+                            distance = Vector2.Normalize(distance);
                             ref var b2 = ref e2.GetMut<PhysicsBody>();
                             // TODO if both 0 then div0
                             var totalBounce = b2.BounceCoeff + b1.BounceCoeff;
