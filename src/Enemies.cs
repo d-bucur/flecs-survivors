@@ -70,7 +70,7 @@ class EnemiesModule : IFlecsModule {
 		world.Observer<GlobalTransform>()
 			.With<Enemy>()
 			.Event(Ecs.OnRemove)
-			.Each(HandleDeath);
+			.Each(PowerupOnDeath);
 
 	}
 	#endregion init
@@ -128,20 +128,21 @@ class EnemiesModule : IFlecsModule {
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new Collider(17, CollisionFlags.ENEMY, CollisionFlags.ALL & ~CollisionFlags.POWERUP))
 			.Set(new Health((int)level))
-			.Observe<OnCollisionEnter>(HandleEnemyHit);
+			.Observe<OnCollisionEnter>(HandleEnemyHit)
+			.Observe<DeathEvent>(HandleDeath);
 		var sprite = level switch {
 			1 => "Content/sprites/alienBeige_walk1.png",
 			2 => "Content/sprites/alienYellow_walk1.png",
 			3 => "Content/sprites/alienBlue_walk1.png",
 			_ => "Content/sprites/alienPink_walk1.png",
 		};
-		world.Entity()
+		world.Entity("Sprite")
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite(sprite))
 			.ChildOf(enemy);
 	}
 
-	static void HandleDeath(Iter it, int i, ref GlobalTransform t) {
+	static void PowerupOnDeath(Iter it, int i, ref GlobalTransform t) {
 		// Spawn power pickup
 		Entity power = it.World().Entity()
 			.Add<Trigger>()
@@ -171,7 +172,7 @@ class EnemiesModule : IFlecsModule {
 					Color.White,
 					Color.Black,
 					300,
-					Tween.EaseOutQuart,
+					Ease.QuartOut,
 					Raylib.ColorLerp,
 					AutoReverse: true
 				).RegisterEcs();
@@ -179,7 +180,36 @@ class EnemiesModule : IFlecsModule {
 		});
 
 		// Console.WriteLine($"Hit by projectile: {entity} - {collision.Other}");
-		Main.DecreaseHealth(enemy);
+		Main.DecreaseHealth(enemy, collision.Penetration);
+	}
+
+	static void HandleDeath(Entity e, ref DeathEvent death) {
+		// Remove child with sprite from hierarchy and animate it out
+		var sprite = e.Lookup("Sprite");
+		sprite.SetName(null!);
+		Vector2 currentPos = new();
+		sprite.Write((ref Transform t, ref GlobalTransform g) => {
+			t.Pos = g.Pos;
+			currentPos = g.Pos;
+		});
+		sprite.Remove(Ecs.ChildOf, e);
+		e.Destruct();
+
+		const int ANIM_TIME = 500;
+		const int PUSHBACK = 50;
+		new Tween(sprite).With(
+		// TODO Enable when rotations are working properly
+		// 	(ref Transform p, float v) => p.Rot = v,
+			// 	0, 360, 1000, Ease.Linear,
+			// 	(ref Transform p) => sprite.Destruct()
+			// ).With(
+			(ref Transform p, float s) => p.Scale.X = s,
+			0.5f, 0, ANIM_TIME, Ease.Linear
+		).With(
+			(ref Transform t, Vector2 p) => t.Pos = p,
+			currentPos, currentPos + death.direction.Normalized() * PUSHBACK, ANIM_TIME, Ease.QuartOut,
+			Vector2.Lerp
+		).RegisterEcs();
 	}
 
 	static void AddFlockingForces(Entity e, ref GlobalTransform enemy, ref PhysicsBody body, ref SpatialQuery query, ref SpatialMap map) {

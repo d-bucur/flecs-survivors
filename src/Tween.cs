@@ -28,6 +28,7 @@ record struct PropertyTween<C, P>(
 	int Repetitions = AutoReverse ? Repetitions * 2 : Repetitions;
 
 	public void Tick(float delta, Entity ent) {
+		if (IsFinished()) return;
 		CurrentTime += delta;
 		var t = EasingFunc(CurrentTime / RunTime);
 		var val = LerpFunc(From, To, t);
@@ -92,12 +93,6 @@ record struct Tween(Entity target) {
 		target.CsWorld().Entity().Set(this);
 	}
 
-	#region easings
-	public static float EaseOutQuart(float x) {
-		return 1 - MathF.Pow(1 - x, 4);
-	}
-	#endregion
-
 	#region generic property
 	public Tween With<C, P>(
 		ComponentSetter<C, P> Setter,
@@ -154,5 +149,16 @@ record struct Tween(Entity target) {
 		return this;
 	}
 	// TODO add Color and Vector2
+	#endregion
+}
+
+public class Ease {
+	#region easings
+	public static float Linear(float x) {
+		return x;
+	}
+	public static float QuartOut(float x) {
+		return 1 - MathF.Pow(1 - x, 4);
+	}
 	#endregion
 }

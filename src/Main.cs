@@ -26,6 +26,8 @@ record struct Health(int MaxValue = 1) {
 
 record struct FollowTarget(Entity Target, float FollowSpeed = 0.25f, float FollowAnticipation = 0);
 
+record struct DeathEvent(Vector2 direction);
+
 class Main : IFlecsModule {
     public void InitModule(World world) {
         Level.InitLevel(ref world);
@@ -135,8 +137,9 @@ class Main : IFlecsModule {
             .Set(new DespawnTimed(5000f))
             .Set(new Collider(17, CollisionFlags.PROJECTILE, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.PROJECTILE))
             .Set(new Health(2))
-            .Observe<OnCollisionEnter>(HandleBulletHit);
-        // TODO rotation is not centered aroudn base
+            .Observe<OnCollisionEnter>(HandleBulletHit)
+            .Observe<DeathEvent>(SimpleDeath);
+        // TODO rotation is not centered around base
         var sprite = world.Entity()
             .Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
             .Set(new Sprite("Content/sprites/bee.png"))
@@ -170,13 +173,17 @@ class Main : IFlecsModule {
     private static void HandleBulletHit(Entity e, ref OnCollisionEnter collision) {
         if (collision.Other.Has<Scenery>()) e.Destruct();
         if (!collision.Other.Has<Enemy>()) return;
-        DecreaseHealth(e);
+        DecreaseHealth(e, collision.Penetration);
     }
 
-    public static void DecreaseHealth(Entity e) {
+    public static void DecreaseHealth(Entity e, Vector2 direction) {
         ref var health = ref e.GetMut<Health>();
         health.Value -= 1;
         e.Modified<Health>();
-        if (health.Value <= 0) e.Destruct();
+        if (health.Value <= 0) e.Emit(new DeathEvent(direction));
+    }
+
+    public static void SimpleDeath(Entity e, ref DeathEvent death) {
+        e.Destruct();
     }
 }

@@ -3,7 +3,17 @@ using Flecs.NET.Core;
 
 namespace flecs_test;
 
-record struct Transform(Vector2 Pos, Vector2 Scale, float Rot = 0);
+struct Transform {
+    public Vector2 Pos;
+    public Vector2 Scale;
+    public float Rot = 0;
+
+    public Transform(Vector2 Pos, Vector2 Scale, float Rot = 0) {
+        this.Pos = Pos;
+        this.Scale = Scale;
+        this.Rot = Rot;
+    }
+}
 record struct GlobalTransform(Vector2 Pos, Vector2 Scale, float Rot) {
     public static GlobalTransform from(Transform t) {
         return new GlobalTransform(t.Pos, t.Scale, t.Rot);

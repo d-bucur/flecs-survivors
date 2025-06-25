@@ -146,7 +146,6 @@ class PhysicsModule : IFlecsModule {
                 e.Emit(new OnCollisionStay(e.CsWorld().GetAlive(current)));
                 continue;
             }
-            // TODO need check for null id here?
             e.Emit(new OnCollisionEnter(e.CsWorld().GetAlive(current), collider.collisionsCurrentFrame[current]));
         }
         foreach (var last in collider.collisionsLastFrame.Keys) {

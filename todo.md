@@ -11,8 +11,7 @@
 - animations sprite changes
 - animations tweens
 - juice:
-  - push back, flash, dmg indicator, particles
-  - rotate enemy away when dead
+  - dmg indicators?, particles
   - camera shake when hit
 
 ## priority 3
