@@ -43,6 +43,11 @@ class Main : IFlecsModule {
             .Kind(Ecs.PreUpdate)
             .Each(TickDespawnTimer);
 
+        world.System<Tween>()
+            .Kind(Ecs.OnUpdate)
+            .Immediate()
+            .Each(ProgressTweens);
+
         world.System<Powerup, Transform, PhysicsBody>()
             .Kind(Ecs.PreUpdate)
             .Iter(AttractPowerups);
@@ -111,7 +116,7 @@ class Main : IFlecsModule {
 
     static void ProcessShooters(Iter it, int i, ref Shooter shooter, ref Transform transform, ref Heading heading) {
         if (!shooter.Enabled) return;
-        
+
         shooter.Time += it.DeltaTime();
         foreach (var weapon in shooter.Weapons) {
             var playerDir = heading.Value == Vector2.Zero ? Vector2.UnitX : Vector2.Normalize(heading.Value);
@@ -131,10 +136,31 @@ class Main : IFlecsModule {
             .Set(new Collider(17, CollisionFlags.PROJECTILE, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.PROJECTILE))
             .Set(new Health(2))
             .Observe<OnCollisionEnter>(HandleBulletHit);
+        // TODO rotation is not centered aroudn base
+        RotationTween(bullet).RegisterEcs();
         world.Entity()
             .Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
             .Set(new Sprite("Content/sprites/bee.png"))
             .ChildOf(bullet);
+    }
+
+    public static Tween RotationTween(Entity e) {
+        return new Tween(e).With(
+            (ref Transform t, float v) => t.Rot = v,
+            (v) => v
+        );
+    }
+
+    private void ProgressTweens(Entity e, ref Tween tween) {
+        if (!tween.target.IsAlive()) {
+            e.Destruct();
+            return;
+        }
+        tween.Tick(e.CsWorld().DeltaTime());
+        if (tween.HasFinished()) {
+            tween.Cleanup();
+            e.Destruct();
+        }
     }
 
     private static void HandleBulletHit(Entity e, ref OnCollisionEnter collision) {

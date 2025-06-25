@@ -14,6 +14,7 @@ record struct RenderCtx(Vec2I WinSize);
 struct Sprite(string Path) {
     public string Path = Path;
     public Texture2D? Texture = null;
+    public Color Tint = Color.White;
 }
 record struct Content {
     Dictionary<string, Texture2D> Textures;
@@ -100,7 +101,7 @@ public struct Render : IFlecsModule {
             // pivot to bottom center of texture
             // TODO preload textures
             var offset = new Vector2(-sprite[i].Texture!.Value.Width / 2, -sprite[i].Texture!.Value.Height) * transform[i].Scale;
-            Raylib.DrawTextureEx(sprite[i].Texture!.Value, t.Pos + offset, t.Rot, t.Scale.X, Color.White);
+            Raylib.DrawTextureEx(sprite[i].Texture!.Value, t.Pos + offset, t.Rot, t.Scale.X, sprite[i].Tint);
         }
         Raylib.EndMode2D();
     }

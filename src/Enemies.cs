@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using Flecs.NET.Core;
+using Raylib_cs;
 
 namespace flecs_test;
 
@@ -37,7 +38,7 @@ class EnemiesModule : IFlecsModule {
 
 		world.System<FlowField>()
 			.Kind<RenderPhase>()
-			// .Kind(Ecs.Disabled)
+			.Kind(Ecs.Disabled)
 			.Each(FlowFieldECS.DebugFlowField);
 
 		world.System<GlobalTransform, PhysicsBody, SpatialQuery, SpatialMap>()
@@ -155,10 +156,26 @@ class EnemiesModule : IFlecsModule {
 			.ChildOf(power);
 	}
 
-	static void HandleEnemyHit(Entity entity, ref OnCollisionEnter collision) {
+	static void HandleEnemyHit(Entity enemy, ref OnCollisionEnter collision) {
+		const float PUSHBACK = 10f;
 		if (!collision.Other.Has<Projectile>()) return;
+
+		ref var body = ref enemy.GetMut<PhysicsBody>();
+		body.Vel = collision.Penetration.Normalized() * PUSHBACK;
+
+		// Flash effect
+		enemy.Children((e) => {
+			if (e.Has<Sprite>()) {
+				new Tween(e, 500).With(
+					(ref Sprite s, Color t) => s.Tint = t,
+					(t) => HSV.Hsv(0, 1, MathF.Sin(t)),
+					OnEnd: (ref Sprite s) => s.Tint = Color.White
+				).RegisterEcs();
+			}
+		});
+
 		// Console.WriteLine($"Hit by projectile: {entity} - {collision.Other}");
-		Main.DecreaseHealth(entity);
+		Main.DecreaseHealth(enemy);
 	}
 
 	static void AddFlockingForces(Entity e, ref GlobalTransform enemy, ref PhysicsBody body, ref SpatialQuery query, ref SpatialMap map) {
@@ -175,7 +192,7 @@ class EnemiesModule : IFlecsModule {
 			if (neighId == e.Id) continue;
 			var neigh = e.CsWorld().GetAlive(neighId);
 			if (!neigh.Has<Enemy>()) continue;
-			
+
 			var neighPos = neigh.Get<Transform>().Pos;
 			var dir = enemy.Pos - neighPos;
 			separation += dir / dir.LengthSquared();

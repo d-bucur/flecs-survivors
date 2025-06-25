@@ -16,8 +16,8 @@ enum PostPhysics;
 enum Trigger;
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1, float DragCoeff = 0.9f);
 record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DEFAULT, CollisionFlags MaskLayers = CollisionFlags.ALL) {
-    public HashSet<Id> collisionsLastFrame = [];
-    public HashSet<Id> collisionsCurrentFrame = [];
+    public Dictionary<Id, Vector2> collisionsLastFrame = [];
+    public Dictionary<Id, Vector2> collisionsCurrentFrame = [];
 }
 record struct SpatialMap(float CellSize) {
     // Could try to profile HybridDictionary
@@ -67,7 +67,7 @@ record struct SpatialQuery() {
 }
 
 // TODO add collision data like directions
-record struct OnCollisionEnter(Entity Other);
+record struct OnCollisionEnter(Entity Other, Vector2 Penetration);
 record struct OnCollisionExit(Entity Other);
 record struct OnCollisionStay(Entity Other);
 
@@ -136,22 +136,22 @@ class PhysicsModule : IFlecsModule {
 
         world.System<GlobalTransform, PhysicsBody, Collider>()
             .Kind<RenderPhase>()
-            // .Kind(Ecs.Disabled)
+            .Kind(Ecs.Disabled)
             .Iter(DebugColliders);
     }
 
     private void EmitCollisionEvents(Entity e, ref Collider collider) {
-        foreach (var current in collider.collisionsCurrentFrame) {
-            if (collider.collisionsLastFrame.Contains(current)) {
+        foreach (var current in collider.collisionsCurrentFrame.Keys) {
+            if (collider.collisionsLastFrame.ContainsKey(current)) {
                 e.Emit(new OnCollisionStay(e.CsWorld().GetAlive(current)));
                 continue;
             }
             // TODO need check for null id here?
-            e.Emit(new OnCollisionEnter(e.CsWorld().GetAlive(current)));
+            e.Emit(new OnCollisionEnter(e.CsWorld().GetAlive(current), collider.collisionsCurrentFrame[current]));
         }
-        foreach (var last in collider.collisionsLastFrame) {
+        foreach (var last in collider.collisionsLastFrame.Keys) {
             // OnCollisionStay already emitted above
-            if (collider.collisionsCurrentFrame.Contains(last))
+            if (collider.collisionsCurrentFrame.ContainsKey(last))
                 continue;
             e.Emit(new OnCollisionExit(e.CsWorld().GetAlive(last)));
         }
@@ -200,6 +200,7 @@ class PhysicsModule : IFlecsModule {
                     var e1 = world.GetAlive(e1Id);
                     // out of order calls into flecs like this are slow
                     // a more efficient call to get multiple components is an open issue
+                    // TODO use e1.Read();
                     ref var t1 = ref e1.GetMut<Transform>();
                     ref var b1 = ref e1.GetMut<PhysicsBody>();
                     ref var c1 = ref e1.GetMut<Collider>();
@@ -228,14 +229,16 @@ class PhysicsModule : IFlecsModule {
                             // Calculate overlap vector
                             ref var t2 = ref e2.GetMut<Transform>();
                             var distance = t1.Pos - t2.Pos;
+							float distanceLen = distance.Length();
                             var separation = c1.Radius + c2.Radius;
-                            var penetration = separation - distance.Length();
+							var penetration = separation - distanceLen;
                             if (penetration <= 0)
                                 continue;
 
                             // Register collision
-                            if (canE1Collide) c1.collisionsCurrentFrame.Add(e2.Id);
-                            if (canE2Collide) c2.collisionsCurrentFrame.Add(e1.Id);
+                            var penetrationVec = distance / distanceLen * penetration;
+                            if (canE1Collide) c1.collisionsCurrentFrame.Add(e2.Id, penetrationVec);
+                            if (canE2Collide) c2.collisionsCurrentFrame.Add(e1.Id, -penetrationVec);
                             // Console.WriteLine($"Collision between {e1.Id} and {e2.Id}");
 
                             // Displace only if no triggers
