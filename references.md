@@ -1,16 +1,23 @@
 More in depth references to improve some of the systems
 
 # Tweening
+Explanations:
 - https://easings.net/
+- https://blog.febucci.com/2018/08/easing-functions/
+
+Example APIs:
 - https://www.monogameextended.net/docs/features/tweening/
 - https://github.com/craftworkgames/MonoGame.Extended/blob/develop/source/MonoGame.Extended/Tweening/Tweener.cs
 - https://docs.flatredball.com/flatredball/api/stateinterpolationplugin/gluevault-component-pages-advanced-interpolation-plugin-tween-function
 - https://github.com/vchelaru/FlatRedBall/blob/470609b39ef75dc5b6fef75b5fc9cbcf19918b78/FRBDK/Glue/StateInterpolationPlugin/StateInterpolationPlugin/TweenerManager.cs#L171
 - https://dotween.demigiant.com/documentation.php
+- https://docs.rs/bevy/0.16.1/bevy/math/curve/enum.EaseFunction.html
 - https://crates.io/crates/bevy_easings
 - https://crates.io/crates/bevy_tweening
 - https://crates.io/crates/bevy_tween
+- https://gist.github.com/Fonserbc/3d31a25e87fdaa541ddf
 
+Libraries:
 - https://github.com/Apostolique/Apos.Tweens
 - https://github.com/njlr/MonoTween
 

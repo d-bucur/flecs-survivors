@@ -137,27 +137,31 @@ class Main : IFlecsModule {
             .Set(new Health(2))
             .Observe<OnCollisionEnter>(HandleBulletHit);
         // TODO rotation is not centered aroudn base
-        RotationTween(bullet).RegisterEcs();
-        world.Entity()
+        var sprite = world.Entity()
             .Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
             .Set(new Sprite("Content/sprites/bee.png"))
             .ChildOf(bullet);
+        RotationTween(sprite).RegisterEcs();
     }
 
     public static Tween RotationTween(Entity e) {
         return new Tween(e).With(
-            (ref Transform t, float v) => t.Rot = v,
-            (v) => v
+            (ref Transform t, float rot) => t.Rot = rot,
+            0,
+            360,
+            500,
+            (t) => t,
+            Repetitions: -1
         );
     }
 
-    private void ProgressTweens(Entity e, ref Tween tween) {
+    public static void ProgressTweens(Entity e, ref Tween tween) {
         if (!tween.target.IsAlive()) {
             e.Destruct();
             return;
         }
         tween.Tick(e.CsWorld().DeltaTime());
-        if (tween.HasFinished()) {
+        if (tween.IsFinished()) {
             tween.Cleanup();
             e.Destruct();
         }

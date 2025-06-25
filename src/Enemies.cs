@@ -166,10 +166,14 @@ class EnemiesModule : IFlecsModule {
 		// Flash effect
 		enemy.Children((e) => {
 			if (e.Has<Sprite>()) {
-				new Tween(e, 500).With(
+				new Tween(e).With(
 					(ref Sprite s, Color t) => s.Tint = t,
-					(t) => HSV.Hsv(0, 1, MathF.Sin(t)),
-					OnEnd: (ref Sprite s) => s.Tint = Color.White
+					Color.White,
+					Color.Black,
+					300,
+					Tween.EaseOutQuart,
+					Raylib.ColorLerp,
+					AutoReverse: true
 				).RegisterEcs();
 			}
 		});

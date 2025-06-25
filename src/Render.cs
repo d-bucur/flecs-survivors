@@ -99,8 +99,8 @@ public struct Render : IFlecsModule {
             // skip if too far away from camera
             if ((t.Pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
             // pivot to bottom center of texture
-            // TODO preload textures
             var offset = new Vector2(-sprite[i].Texture!.Value.Width / 2, -sprite[i].Texture!.Value.Height) * transform[i].Scale;
+            // TODO rotation is not centered around origin
             Raylib.DrawTextureEx(sprite[i].Texture!.Value, t.Pos + offset, t.Rot, t.Scale.X, sprite[i].Tint);
         }
         Raylib.EndMode2D();
