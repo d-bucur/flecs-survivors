@@ -12,11 +12,6 @@ record struct Vec2I(int X, int Y) {
         return new Vector2(X, Y);
     }
 
-    // TODO remove
-    public System.Numerics.Vector2 ToNumerics() {
-        return new System.Numerics.Vector2(X, Y);
-    }
-
     public static Vec2I operator +(Vec2I a, Vec2I b) {
         return new Vec2I(a.X + b.X, a.Y + b.Y);
     }

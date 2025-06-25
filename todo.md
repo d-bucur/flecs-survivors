@@ -1,4 +1,5 @@
 ## priority 1
+- multiply everything by deltaT or can't do timescale
 - flow field LoS and jankiness
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why
 - bug: wonky movement ever since added multithreading

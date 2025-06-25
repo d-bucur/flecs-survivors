@@ -92,7 +92,6 @@ class EnemiesModule : IFlecsModule {
 		var field = flow[0];
 
 		// TODO when close enough should go directly towards player
-		// TODO 
 		foreach (var i in it) {
 			var key = field.ToFieldPos(transform[i].Pos);
 			Vector2 force;
@@ -198,12 +197,11 @@ class EnemiesModule : IFlecsModule {
 		const int ANIM_TIME = 500;
 		const int PUSHBACK = 50;
 		new Tween(sprite).With(
-		// TODO Enable when rotations are working properly
-		// 	(ref Transform p, float v) => p.Rot = v,
-			// 	0, 360, 1000, Ease.Linear,
-			// 	(ref Transform p) => sprite.Destruct()
-			// ).With(
-			(ref Transform p, float s) => p.Scale.X = s,
+			(ref Transform p, float v) => p.Rot = v,
+				0, 360, 1000, Ease.Linear,
+				(ref Transform p) => sprite.Destruct()
+			).With(
+			(ref Transform p, float s) => p.Scale = new Vector2(s),
 			0.5f, 0, ANIM_TIME, Ease.Linear
 		).With(
 			(ref Transform t, Vector2 p) => t.Pos = p,

@@ -11,10 +11,16 @@ enum PostRenderPhase;
 
 record struct Camera(Camera2D Value, int ScreenWidth, int ScreenHeight);
 record struct RenderCtx(Vec2I WinSize);
-struct Sprite(string Path) {
+struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER) {
     public string Path = Path;
     public Texture2D? Texture = null;
     public Color Tint = Color.White;
+    public OriginAlign Align = align;
+    public Vector2? Origin = null;
+}
+enum OriginAlign {
+    CENTER,
+    BOTTOM_CENTER,
 }
 record struct Content {
     Dictionary<string, Texture2D> Textures;
@@ -74,7 +80,7 @@ public struct Render : IFlecsModule {
         var playerEntity = world.QueryBuilder<Transform>().With<Player>().Build().First();
         var cameraOffset = renderCtx.WinSize / 2;
         world.Entity("Camera")
-            .Set(new Camera(new Camera2D(cameraOffset.ToNumerics(), Vector2.Zero, 0, 1), 800, 480))
+            .Set(new Camera(new Camera2D(cameraOffset.ToVector2(), Vector2.Zero, 0, 1), 800, 480))
             .Set(new Transform(Vector2.Zero, Vector2.One))
             .Set(new FollowTarget(playerEntity));
     }
@@ -87,6 +93,12 @@ public struct Render : IFlecsModule {
 
     static void LoadSprite(ref Sprite sprite, ref Content content) {
         sprite.Texture ??= content.Load(sprite.Path);
+        if (sprite.Align == OriginAlign.BOTTOM_CENTER) {
+            sprite.Origin = new Vector2(sprite.Texture.Value.Width / 2, sprite.Texture.Value.Height);
+        }
+        else {
+            sprite.Origin = new Vector2(sprite.Texture.Value.Width / 2, sprite.Texture.Value.Height / 2);
+        }
     }
 
     void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite) {
@@ -98,10 +110,15 @@ public struct Render : IFlecsModule {
             var t = transform[i];
             // skip if too far away from camera
             if ((t.Pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
-            // pivot to bottom center of texture
-            var offset = new Vector2(-sprite[i].Texture!.Value.Width / 2, -sprite[i].Texture!.Value.Height) * transform[i].Scale;
-            // TODO rotation is not centered around origin
-            Raylib.DrawTextureEx(sprite[i].Texture!.Value, t.Pos + offset, t.Rot, t.Scale.X, sprite[i].Tint);
+            
+			// pivot to bottom center of texture
+            int texWidth = sprite[i].Texture!.Value.Width;
+			int texHeight = sprite[i].Texture!.Value.Height;
+			Vector2 origin = sprite[i].Origin!.Value * transform[i].Scale;
+
+            var source = new Rectangle(0, 0, texWidth, texHeight);
+            var dest = new Rectangle(t.Pos, texWidth * t.Scale.X, texHeight * t.Scale.Y);
+            Raylib.DrawTexturePro(sprite[i].Texture!.Value, source, dest, origin, t.Rot, sprite[i].Tint);
         }
         Raylib.EndMode2D();
     }

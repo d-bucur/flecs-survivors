@@ -139,10 +139,9 @@ class Main : IFlecsModule {
             .Set(new Health(2))
             .Observe<OnCollisionEnter>(HandleBulletHit)
             .Observe<DeathEvent>(SimpleDeath);
-        // TODO rotation is not centered around base
         var sprite = world.Entity()
-            .Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
-            .Set(new Sprite("Content/sprites/bee.png"))
+            .Set(new Transform(new Vector2(0, 0), new Vector2(0.5f, 0.5f), 0))
+            .Set(new Sprite("Content/sprites/bee.png", OriginAlign.CENTER))
             .ChildOf(bullet);
         RotationTween(sprite).RegisterEcs();
     }
