@@ -11,30 +11,61 @@ enum PostRenderPhase;
 
 record struct Camera(Camera2D Value, int ScreenWidth, int ScreenHeight);
 record struct RenderCtx(Vec2I WinSize);
+
 struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER) {
-    public string Path = Path;
+    public string Path = Path; // TODO don't need path after loading
     public Texture2D? Texture = null;
+    public PackingData? Packing = null; // TODO should only keep my own key
     public Color Tint = Color.White;
     public OriginAlign Align = align;
     public Vector2? Origin = null;
+    public Rectangle DrawSource;
+
+    internal void SetDrawSource(Rectangle source) {
+        DrawSource = source;
+        if (Align == OriginAlign.BOTTOM_CENTER) {
+            Origin = new Vector2(source.Width / 2, source.Height);
+        }
+        else {
+            Origin = new Vector2(source.Width / 2, source.Height / 2);
+        }
+    }
 }
 enum OriginAlign {
     CENTER,
     BOTTOM_CENTER,
 }
-record struct Content {
-    Dictionary<string, Texture2D> Textures;
-    public Content() {
-        Textures = new();
+
+record struct Animator(string Name, string CurrentAnimation = "default", float Speed = 1000f / 60f) {
+    public int AnimationFrame = -1;
+    public float TimeSinceUpdate = Speed;
+
+    internal void Progress(float deltaTime, SpriteSheet.KeyframeRaw[] animationRects) {
+        TimeSinceUpdate += deltaTime;
+        while (TimeSinceUpdate > Speed) {
+            TimeSinceUpdate -= Speed;
+            AnimationFrame = (AnimationFrame + 1) % animationRects.Length;
+        }
+    }
+}
+
+internal record struct TextureData(Texture2D Texture, PackingData? Packed);
+record struct ContentManager {
+    Dictionary<string, TextureData> TexturesCache;
+
+    public ContentManager() {
+        TexturesCache = new();
     }
 
-    public Texture2D Load(string path) {
-        if (Textures.TryGetValue(path, out var ret)) {
+    public TextureData Load(string path) {
+        if (TexturesCache.TryGetValue(path, out var ret)) {
             return ret;
         }
-        ret = Raylib.LoadTexture(path);
-        Textures[path] = ret;
-        return ret;
+        var texture = Raylib.LoadTexture(path);
+        var data = SpriteSheet.LoadSheet(path);
+
+        TexturesCache[path] = new TextureData(texture, data);
+        return TexturesCache[path];
     }
 }
 
@@ -44,22 +75,27 @@ public struct Render : IFlecsModule {
 
     public unsafe void InitModule(World world) {
         cameraQuery = world.Query<Camera>();
-        world.Set(new Content());
+        world.Set(new ContentManager());
 
-        world.Observer<Sprite, Content>()
+        world.Observer<Sprite, ContentManager>()
             .Event(Ecs.OnSet)
             .TermAt(1).Singleton()
             .Each(LoadSprite);
+
         world.System<Camera, GlobalTransform>()
             .Kind(Ecs.PreUpdate)
             .Each(UpdateCameraTransform);
+
+        world.System<Animator, Sprite, ContentManager>()
+            .TermAt(2).Singleton()
+            .Kind<RenderPhase>()
+            .Each(UpdateAnimator);
         world.System<GlobalTransform, Sprite>()
             .Kind<RenderPhase>()
-            // monogame depth sorting is very finicky so do it here instead
             // TODO full sorting on each frame is expensive. Maybe some way to cache a more stable list using change detection?
             .OrderBy<GlobalTransform>(OrderSprites)
-            // flecs recommends rendering here. Not sure how to do that using monogame since Draw is separate
             // .Kind(Ecs.OnStore) 
+            // TODO Run would be more efficient
             .Iter(RenderSprites);
 
         world.System()
@@ -71,7 +107,7 @@ public struct Render : IFlecsModule {
     private unsafe int OrderSprites(ulong e1, void* t1, ulong e2, void* t2) {
         var p1 = ((GlobalTransform*)t1)->Pos.Y;
         var p2 = ((GlobalTransform*)t2)->Pos.Y;
-        return (int)((p1 - p2));
+        return (int)(p1 - p2);
     }
 
     static void InitCamera(Iter it) {
@@ -91,17 +127,25 @@ public struct Render : IFlecsModule {
         camera.Value = cam;
     }
 
-    static void LoadSprite(ref Sprite sprite, ref Content content) {
-        sprite.Texture ??= content.Load(sprite.Path);
-        if (sprite.Align == OriginAlign.BOTTOM_CENTER) {
-            sprite.Origin = new Vector2(sprite.Texture.Value.Width / 2, sprite.Texture.Value.Height);
-        }
-        else {
-            sprite.Origin = new Vector2(sprite.Texture.Value.Width / 2, sprite.Texture.Value.Height / 2);
-        }
+    static void LoadSprite(ref Sprite sprite, ref ContentManager content) {
+        TextureData textureData = content.Load(sprite.Path);
+        sprite.Texture ??= textureData.Texture;
+        sprite.Packing ??= textureData.Packed;
+        if (textureData.Packed is null)
+            sprite.SetDrawSource(new Rectangle(0, 0, textureData.Texture.Width, textureData.Texture.Height));
     }
 
-    void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> sprite) {
+    private void UpdateAnimator(Entity e, ref Animator animator, ref Sprite sprite, ref ContentManager content) {
+        // TODO packed sprite without animator should default to the correct frame. It currently doesn't
+        if (sprite.Packing is null)
+            return; // static sprite
+
+        var animationRects = sprite.Packing[animator.Name][animator.CurrentAnimation];
+        animator.Progress(e.CsWorld().DeltaTime(), animationRects);
+        sprite.SetDrawSource(animationRects[animator.AnimationFrame]);
+    }
+
+    void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> spriteField) {
         var camera = cameraQuery.First().Get<Camera>();
         Raylib.BeginMode2D(camera.Value);
         var cutoffDistance = MathF.Pow(camera.ScreenWidth, 2);
@@ -110,15 +154,20 @@ public struct Render : IFlecsModule {
             var t = transform[i];
             // skip if too far away from camera
             if ((t.Pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
-            
-			// pivot to bottom center of texture
-            int texWidth = sprite[i].Texture!.Value.Width;
-			int texHeight = sprite[i].Texture!.Value.Height;
-			Vector2 origin = sprite[i].Origin!.Value * transform[i].Scale;
 
-            var source = new Rectangle(0, 0, texWidth, texHeight);
-            var dest = new Rectangle(t.Pos, texWidth * t.Scale.X, texHeight * t.Scale.Y);
-            Raylib.DrawTexturePro(sprite[i].Texture!.Value, source, dest, origin, t.Rot, sprite[i].Tint);
+            Sprite sprite = spriteField[i];
+            Vector2 origin = sprite.Origin!.Value * transform[i].Scale;
+            Rectangle source = sprite.DrawSource;
+            var dest = new Rectangle(t.Pos, source.Width * t.Scale.X, source.Height * t.Scale.Y);
+
+            Raylib.DrawTexturePro(
+                sprite.Texture!.Value,
+                source,
+                dest,
+                origin,
+                t.Rot,
+                sprite.Tint
+            );
         }
         Raylib.EndMode2D();
     }

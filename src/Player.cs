@@ -25,8 +25,9 @@ class PlayerModule : IFlecsModule {
             .Set(new PowerCollector(200))
             .Observe<OnCollisionEnter>(HandlePowerCollected);
         world.Entity()
-            .Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
-            .Set(new Sprite("Content/sprites/alienGreen_walk1.png"))
+            .Set(new Transform(new Vector2(0, 15), new Vector2(2f, 2f), 0))
+            .Set(new Sprite("Content/sprites/Blue_witch/packed/blue_witch.png"))
+            .Set(new Animator("blue_witch", "charge", 75))
             .ChildOf(player);
         Console.WriteLine($"Player: {player.Id.Value}");
 
