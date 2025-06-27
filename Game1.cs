@@ -5,7 +5,9 @@ using Raylib_cs;
 
 namespace flecs_test;
 
-record struct GameCtx();
+class GameCtx() {
+    internal float TimeScale = 1.0f;
+}
 
 public class Program {
     public static void Main() {
@@ -33,6 +35,7 @@ public class Game {
     World _world;
     Pipeline _renderPipeline;
     Vec2I _winSize;
+    GameCtx gameCtx;
 
     Rectangle source;
     RenderTexture2D frameBuffer;
@@ -60,6 +63,8 @@ public class Game {
             .Build();
 
         _world.Set(new RenderCtx(winSize));
+        gameCtx = new();
+        _world.Set(gameCtx);
         // _world.SetThreads(Environment.ProcessorCount);
         // _world.SetTaskThreads(Environment.ProcessorCount);
 
@@ -73,13 +78,15 @@ public class Game {
     }
 
     internal void Update() {
-        _world.Progress(Raylib.GetFrameTime() * 1000);
+		float deltaTime = Raylib.GetFrameTime() * 1000 * gameCtx.TimeScale;
+		_world.Progress(deltaTime);
     }
 
     internal void Draw() {
         Raylib.BeginTextureMode(frameBuffer);
         Raylib.ClearBackground(Color.DarkBlue);
-        _world.RunPipeline(_renderPipeline, Raylib.GetFrameTime() * 1000);
+        _world.RunPipeline(_renderPipeline, Raylib.GetFrameTime() * 1000 * gameCtx.TimeScale);
+        Raylib.DrawFPS(10, 10);
         Raylib.EndTextureMode();
 
         // TODO some issues. Resizing window doesn't update screen width (at least on linux)

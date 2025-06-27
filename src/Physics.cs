@@ -91,12 +91,13 @@ class PhysicsModule : IFlecsModule {
         world.Set(new SpatialQuery());
 
         // TODO update to GlobalTransform
-        world.System<Transform, PhysicsBody>()
+        world.System<Transform, PhysicsBody, GameCtx>("Integrate positions & velocities")
+            .TermAt(2).Singleton()
             .Kind<PrePhysics>()
             .MultiThreaded()
             .Each(IntegratePosition);
 
-        world.System<SpatialMap>()
+        world.System<SpatialMap>("Clear prev spatial map")
             .Kind<PrePhysics>()
             .Each((ref SpatialMap s) => {
                 foreach (var (k, l) in s.Map)
@@ -104,7 +105,7 @@ class PhysicsModule : IFlecsModule {
                 s.Map.Clear();
             });
 
-        world.System<Transform, SpatialMap>()
+        world.System<Transform, SpatialMap>("Build new spatial map")
             .TermAt(1).Singleton()
             .With<PhysicsBody>()
             .With<Collider>()
@@ -117,24 +118,25 @@ class PhysicsModule : IFlecsModule {
         // Maybe move it into Update so that entities are despawned only at this sync point
         // and spatial queries are valid during Update
 
-        world.System()
+        world.System("Handle collisions")
             .Kind<OnPhysics>()
             .Read<SpatialMap>()
             .MultiThreaded()
             .Immediate()
             .Run(HandleCollisions);
 
-        world.System<Collider>()
+        world.System<Collider>("Emit collision events")
             .Kind<PostPhysics>()
             .MultiThreaded()
             .Each(EmitCollisionEvents);
 
-        world.System<Heading, PhysicsBody>()
+        // Kind of useless? Just use velocity maybe?
+        world.System<Heading, PhysicsBody>("Update headings")
             .Kind(Ecs.OnUpdate)
             .MultiThreaded()
             .Each(UpdateHeading);
 
-        var debugId = world.System<GlobalTransform, PhysicsBody, Collider>()
+        var debugId = world.System<GlobalTransform, PhysicsBody, Collider>("Debug colliders and physics")
             .Kind<RenderPhase>()
             .Iter(DebugColliders);
         world.System<DebugConfig>()
@@ -266,11 +268,10 @@ class PhysicsModule : IFlecsModule {
         countdown.Wait();
     }
 
-    private void IntegratePosition(Entity e, ref Transform transform, ref PhysicsBody body) {
-        // Could use e.CsWorld().DeltaTime() to support variable time scale
-        body.Vel += body.Accel;
-        transform.Pos += body.Vel;
-        // should probably do drag in a different step
+    private void IntegratePosition(Entity e, ref Transform transform, ref PhysicsBody body, ref GameCtx ctx) {
+        var dt = e.CsWorld().DeltaTime();
+        body.Vel += body.Accel * dt;
+        transform.Pos += body.Vel * dt;
         body.Vel *= body.DragCoeff;
     }
 

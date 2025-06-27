@@ -6,7 +6,6 @@
 - revisit death animation
 
 ## priority 2
-- multiply everything by deltaT or can't do timescale
 - player health and death
 - particle effects
 - juice:

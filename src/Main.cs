@@ -76,27 +76,14 @@ class Main : IFlecsModule {
             .TermAt(0).Singleton()
             .Kind(Ecs.PostLoad)
             .Each(CheckDebugKeys);
+        world.System<GameCtx>()
+            .TermAt(0).Singleton()
+            .Kind(Ecs.PostLoad)
+            .Each(InputTimeScale);
     }
 
-    private void CheckDebugKeys(ref DebugConfig conf) {
-        if (Raylib.IsKeyPressed(KeyboardKey.I)) {
-            conf.DebugColliders = !conf.DebugColliders;
-            if (conf.DebugColliders)
-                conf.SystemIdColliders!.Value.Enable();
-            else
-                conf.SystemIdColliders!.Value.Disable();
-        }
-        if (Raylib.IsKeyPressed(KeyboardKey.K)) {
-            conf.DebugFlowFields = !conf.DebugFlowFields;
-            if (conf.DebugFlowFields)
-                conf.SystemIdFlow!.Value.Enable();
-            else
-                conf.SystemIdFlow!.Value.Disable();
-        }
-    }
-
-    private void SetShooterTarget(Iter it, Field<Shooter> shooter, Field<GlobalTransform> transform) {
-        // can cache query
+	private void SetShooterTarget(Iter it, Field<Shooter> shooter, Field<GlobalTransform> transform) {
+        // TODO cache query
         var qEnemies = it.World().QueryBuilder<GlobalTransform>().With<Enemy>().Build();
         foreach (var shooterId in it) {
             var myPos = transform[shooterId].Pos;
@@ -131,7 +118,7 @@ class Main : IFlecsModule {
         var collector = collectorQ.First().Get<Transform>();
         var rangeSq = MathF.Pow(collectorQ.First().Get<PowerCollector>().Range, 2);
 
-        const float SPEED = 8;
+        const float SPEED = 0.3f;
         foreach (var i in it) {
             Vector2 dist = collector.Pos - transform[i].Pos;
             if (dist.LengthSquared() >= rangeSq) continue;
@@ -216,4 +203,37 @@ class Main : IFlecsModule {
     public static void SimpleDeath(Entity e, ref DeathEvent death) {
         e.Destruct();
     }
+
+    private void CheckDebugKeys(ref DebugConfig conf) {
+        if (Raylib.IsKeyPressed(KeyboardKey.I)) {
+            conf.DebugColliders = !conf.DebugColliders;
+            if (conf.DebugColliders)
+                conf.SystemIdColliders!.Value.Enable();
+            else
+                conf.SystemIdColliders!.Value.Disable();
+        }
+        if (Raylib.IsKeyPressed(KeyboardKey.K)) {
+            conf.DebugFlowFields = !conf.DebugFlowFields;
+            if (conf.DebugFlowFields)
+                conf.SystemIdFlow!.Value.Enable();
+            else
+                conf.SystemIdFlow!.Value.Disable();
+        }
+    }
+
+	private void InputTimeScale(ref GameCtx ctx) {
+        if (Raylib.IsKeyPressed(KeyboardKey.One)) {
+            Console.WriteLine($"Timescale 1d");
+            ctx.TimeScale = 0.2f;
+        }
+        if (Raylib.IsKeyPressed(KeyboardKey.Two)) {
+            ctx.TimeScale = 0.5f;
+        }
+        if (Raylib.IsKeyPressed(KeyboardKey.Three)) {
+            ctx.TimeScale = 1f;
+        }
+        if (Raylib.IsKeyPressed(KeyboardKey.Four)) {
+            ctx.TimeScale = 2f;
+        }
+	}
 }

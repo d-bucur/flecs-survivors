@@ -16,7 +16,7 @@ struct SimplePattern(float shootInterval) : IBulletPattern {
     List<BulletData> bulletData = new(10);
     double lastShotTime = 0;
     float shootInterval = shootInterval;
-    const float SPEED = 7;
+    const float SPEED = 7f;
 
     public uint Level { get => 1; set => _ = 1; }
 
@@ -42,7 +42,7 @@ record struct UniformRotatingPattern(
     float bulletsPerShot = 1,
     float rotRadiansPerSec = 0,
     float scatterAngle = MathF.PI * 2,
-    float bulletSpeed = 8,
+    float bulletSpeed = 0.5f,
     bool targetOrDirectionRotated = false,
     float bulletsPerLevel = 1,
     float intervalFactorPerLevel = 0.95f

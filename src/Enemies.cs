@@ -12,7 +12,7 @@ record struct EnemySpawner(uint Level = 1);
 class EnemiesModule : IFlecsModule {
 	#region init
 	public void InitModule(World world) {
-		world.Entity("EnemySpawner").Set(new EnemySpawner(7));
+		world.Entity("EnemySpawner").Set(new EnemySpawner(1));
 
 		world.Set(new FlowField(50, 15));
 
@@ -55,7 +55,6 @@ class EnemiesModule : IFlecsModule {
 			.With<Enemy>()
 			.TermAt(2).Singleton()
 			.Kind(Ecs.PreUpdate)
-			// .Kind(Ecs.Disabled)
 			.Iter(UpdateEnemyAccel);
 
 		world.System<EnemySpawner>()
@@ -83,31 +82,6 @@ class EnemiesModule : IFlecsModule {
 		if (spawner.Level >= 10) return;
 		spawner.Level += 1;
 		Console.WriteLine($"Enemy levels: {spawner.Level}");
-	}
-
-	static void UpdateEnemyAccel(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<FlowField> flow) {
-		// Get Transform of Player and update all Enemy bodies to follow
-		const float ACCEL = 0.1f;
-		const float SMOOTH_ACCEL_COEFF = 0.8f;
-
-		var query = it.World().QueryBuilder<Transform>().With<Player>().Build();
-		ref readonly var player = ref query.First().Get<Transform>();
-		var field = flow[0];
-
-		// TODO when close enough should go directly towards player
-		foreach (var i in it) {
-			var key = field.ToFieldPos(transform[i].Pos);
-			Vector2 force;
-			if (key is not null) {
-				force = field.Flow[field.ToKey(key.Value)];
-			}
-			else { // outside of field. Use direct force towards player
-				force = player.Pos - transform[i].Pos;
-				if (force != Vector2.Zero) force = Vector2.Normalize(force);
-			}
-			var smoothAccel = body[i].Accel * SMOOTH_ACCEL_COEFF + force * ACCEL * (1 - SMOOTH_ACCEL_COEFF);
-			body[i].Accel = smoothAccel;
-		}
 	}
 
 	static void SpawnEnemies(Iter it, Field<EnemySpawner> spawner) {
@@ -207,7 +181,7 @@ class EnemiesModule : IFlecsModule {
 	}
 
 	static void HandleEnemyHit(Entity enemy, ref OnCollisionEnter collision) {
-		const float PUSHBACK = 10f;
+		const float PUSHBACK = 0.5f;
 		if (!collision.Other.Has<Projectile>()) return;
 
 		ref var body = ref enemy.GetMut<PhysicsBody>();
@@ -263,7 +237,7 @@ class EnemiesModule : IFlecsModule {
 	static void AddFlockingForces(Entity e, ref GlobalTransform enemy, ref PhysicsBody body, ref SpatialQuery query, ref SpatialMap map) {
 		const float SEPARATION_COEFF = 50f;
 		const float ALIGNMENT_COEFF = 0.1f;
-		const float MAX_ACCEL = 0.01f;
+		const float MAX_ACCEL = 0.07f / 1000;
 
 		query.Prep(enemy.Pos, 10);
 		query.Execute(map);
@@ -285,6 +259,31 @@ class EnemiesModule : IFlecsModule {
 		flockingTotal = flockingTotal.Truncated(MAX_ACCEL);
 
 		body.Accel += flockingTotal;
+	}
+
+	static void UpdateEnemyAccel(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<FlowField> flow) {
+		// Get Transform of Player and update all Enemy bodies to follow
+		const float ACCEL = 0.5f / 1000;
+		const float SMOOTH_ACCEL_COEFF = 0.8f;
+
+		var query = it.World().QueryBuilder<Transform>().With<Player>().Build();
+		ref readonly var player = ref query.First().Get<Transform>();
+		var field = flow[0];
+
+		// TODO when close enough should go directly towards player
+		foreach (var i in it) {
+			var key = field.ToFieldPos(transform[i].Pos);
+			Vector2 force;
+			if (key is not null) {
+				force = field.Flow[field.ToKey(key.Value)];
+			}
+			else { // outside of field. Use direct force towards player
+				force = player.Pos - transform[i].Pos;
+				if (force != Vector2.Zero) force = Vector2.Normalize(force);
+			}
+			var smoothAccel = body[i].Accel * SMOOTH_ACCEL_COEFF + force * ACCEL * (1 - SMOOTH_ACCEL_COEFF);
+			body[i].Accel = smoothAccel;
+		}
 	}
 	#endregion
 }
