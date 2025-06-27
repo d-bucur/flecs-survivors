@@ -1,4 +1,5 @@
 ## priority 1
+- add keyboard shortcuts for debug systems
 - multiply everything by deltaT or can't do timescale
 - flow field LoS and jankiness
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why
@@ -9,8 +10,6 @@
 - player health and death
 - tilesets. Use Ldtk maybe
 - particle effects
-- animations sprite changes
-- animations tweens
 - juice:
   - dmg indicators?, particles
   - camera shake when hit

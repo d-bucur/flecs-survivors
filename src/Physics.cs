@@ -136,7 +136,7 @@ class PhysicsModule : IFlecsModule {
 
         world.System<GlobalTransform, PhysicsBody, Collider>()
             .Kind<RenderPhase>()
-            .Kind(Ecs.Disabled)
+            // .Kind(Ecs.Disabled)
             .Iter(DebugColliders);
     }
 

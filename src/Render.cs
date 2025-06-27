@@ -94,9 +94,7 @@ public struct Render : IFlecsModule {
             .Kind<RenderPhase>()
             // TODO full sorting on each frame is expensive. Maybe some way to cache a more stable list using change detection?
             .OrderBy<GlobalTransform>(OrderSprites)
-            // .Kind(Ecs.OnStore) 
-            // TODO Run would be more efficient
-            .Iter(RenderSprites);
+            .Run(RenderSprites);
 
         world.System()
             .With<Player>()
@@ -145,29 +143,33 @@ public struct Render : IFlecsModule {
         sprite.SetDrawSource(animationRects[animator.AnimationFrame]);
     }
 
-    void RenderSprites(Iter it, Field<GlobalTransform> transform, Field<Sprite> spriteField) {
+    void RenderSprites(Iter it) {
         var camera = cameraQuery.First().Get<Camera>();
-        Raylib.BeginMode2D(camera.Value);
         var cutoffDistance = MathF.Pow(camera.ScreenWidth, 2);
+        Raylib.BeginMode2D(camera.Value);
 
-        foreach (int i in it) {
-            var t = transform[i];
-            // skip if too far away from camera
-            if ((t.Pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
+        while (it.Next()) {
+            var transform = it.Field<GlobalTransform>(0);
+            var spriteField = it.Field<Sprite>(1);
+            foreach (int i in it) {
+                var t = transform[i];
+                // skip if too far away from camera
+                if ((t.Pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
 
-            Sprite sprite = spriteField[i];
-            Vector2 origin = sprite.Origin!.Value * transform[i].Scale;
-            Rectangle source = sprite.DrawSource;
-            var dest = new Rectangle(t.Pos, source.Width * t.Scale.X, source.Height * t.Scale.Y);
+                Sprite sprite = spriteField[i];
+                Vector2 origin = sprite.Origin!.Value * transform[i].Scale;
+                Rectangle source = sprite.DrawSource;
+                var dest = new Rectangle(t.Pos, source.Width * t.Scale.X, source.Height * t.Scale.Y);
 
-            Raylib.DrawTexturePro(
-                sprite.Texture!.Value,
-                source,
-                dest,
-                origin,
-                t.Rot,
-                sprite.Tint
-            );
+                Raylib.DrawTexturePro(
+                    sprite.Texture!.Value,
+                    source,
+                    dest,
+                    origin,
+                    t.Rot,
+                    sprite.Tint
+                );
+            }
         }
         Raylib.EndMode2D();
     }

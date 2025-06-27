@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Text.RegularExpressions;
 using Flecs.NET.Core;
 using Raylib_cs;
 
@@ -77,7 +78,7 @@ class EnemiesModule : IFlecsModule {
 
 	#region systems
 	static void IncrementLevel(ref EnemySpawner spawner) {
-		if (spawner.Level >= 5) return;
+		if (spawner.Level >= 8) return;
 		spawner.Level += 1;
 		Console.WriteLine($"Enemy levels: {spawner.Level}");
 	}
@@ -129,16 +130,53 @@ class EnemiesModule : IFlecsModule {
 			.Set(new Health((int)level))
 			.Observe<OnCollisionEnter>(HandleEnemyHit)
 			.Observe<DeathEvent>(HandleDeath);
-		var sprite = level switch {
-			1 => "Content/sprites/alienBeige_walk1.png",
-			2 => "Content/sprites/alienYellow_walk1.png",
-			3 => "Content/sprites/alienBlue_walk1.png",
-			_ => "Content/sprites/alienPink_walk1.png",
-		};
-		world.Entity("Sprite")
-			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
-			.Set(new Sprite(sprite))
+		var sprite = world.Entity("Sprite")
+			.Set(new Sprite("Content/sprites/packed2/characters.png"))
 			.ChildOf(enemy);
+		PrepEnemyLevel(level, ref enemy, ref sprite);
+	}
+
+	private static void PrepEnemyLevel(uint level, ref Entity enemy, ref Entity sprite) {
+		if (level == 1) {
+			sprite
+				.Set(new Transform(new Vector2(0, 15), new Vector2(3f, 3f), 0))
+				.Set(new Animator("thief", "run", 75));
+		}
+		if (level == 2) {
+			sprite
+				.Set(new Transform(new Vector2(0, 15), new Vector2(3f, 3f), 0))
+				.Set(new Animator("anomaly", "run", 75));
+		}
+		if (level == 3) {
+			sprite
+				.Set(new Transform(new Vector2(0, 20), new Vector2(3f, 3f), 0))
+				.Set(new Animator("knight0", "run", 75));
+		}
+		if (level == 4) {
+			sprite
+				.Set(new Transform(new Vector2(0, 70), new Vector2(3f, 3f), 0))
+				.Set(new Animator("knight1", "run", 75));
+		}
+		if (level == 5) {
+			sprite
+				.Set(new Transform(new Vector2(0, 45), new Vector2(2f, 2f), 0))
+				.Set(new Animator("frost_curse", "run", 75));
+		}
+		if (level == 6) {
+			sprite
+				.Set(new Transform(new Vector2(0, 45), new Vector2(2f, 2f), 0))
+				.Set(new Animator("sword", "walk", 75));
+		}
+		if (level == 7) {
+			sprite
+				.Set(new Transform(new Vector2(0, 60), new Vector2(2f, 2f), 0))
+				.Set(new Animator("dead", "idle", 75));
+		}
+		if (level == 8) {
+			sprite
+				.Set(new Transform(new Vector2(0, 110), new Vector2(2f, 2f), 0))
+				.Set(new Animator("evil_wizard", "walk", 75));
+		}
 	}
 
 	static void PowerupOnDeath(Iter it, int i, ref GlobalTransform t) {
