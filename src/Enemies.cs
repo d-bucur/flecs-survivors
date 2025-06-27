@@ -12,7 +12,7 @@ record struct EnemySpawner(uint Level = 1);
 class EnemiesModule : IFlecsModule {
 	#region init
 	public void InitModule(World world) {
-		world.Entity("EnemySpawner").Set(new EnemySpawner(1));
+		world.Entity("EnemySpawner").Set(new EnemySpawner(7));
 
 		world.Set(new FlowField(50, 15));
 
@@ -37,10 +37,12 @@ class EnemiesModule : IFlecsModule {
 			// .MultiThreaded()
 			.Each(FlowFieldECS.GenerateFlowField);
 
-		world.System<FlowField>()
+		var debugId = world.System<FlowField>()
 			.Kind<RenderPhase>()
-			.Kind(Ecs.Disabled)
 			.Each(FlowFieldECS.DebugFlowField);
+		world.System<DebugConfig>()
+			.Kind(Ecs.OnStart)
+			.Each((ref DebugConfig conf) => { conf.SystemIdFlow = debugId; debugId.Disable(); });
 
 		world.System<GlobalTransform, PhysicsBody, SpatialQuery, SpatialMap>()
 			.TermAt(2).Singleton()
@@ -78,7 +80,7 @@ class EnemiesModule : IFlecsModule {
 
 	#region systems
 	static void IncrementLevel(ref EnemySpawner spawner) {
-		if (spawner.Level >= 8) return;
+		if (spawner.Level >= 10) return;
 		spawner.Level += 1;
 		Console.WriteLine($"Enemy levels: {spawner.Level}");
 	}
@@ -174,8 +176,18 @@ class EnemiesModule : IFlecsModule {
 		}
 		if (level == 8) {
 			sprite
+				.Set(new Transform(new Vector2(0, 120), new Vector2(2f, 2f), 0))
+				.Set(new Animator("dusk_druid", "walk", 75));
+		}
+		if (level == 9) {
+			sprite
 				.Set(new Transform(new Vector2(0, 110), new Vector2(2f, 2f), 0))
 				.Set(new Animator("evil_wizard", "walk", 75));
+		}
+		if (level == 10) {
+			sprite
+				.Set(new Transform(new Vector2(0, 40), new Vector2(1f, 1f), 0))
+				.Set(new Animator("wetland_boss", "walk", 75));
 		}
 	}
 

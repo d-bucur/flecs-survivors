@@ -1,4 +1,5 @@
 using Flecs.NET.Core;
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -28,9 +29,17 @@ record struct FollowTarget(Entity Target, float FollowSpeed = 0.25f, float Follo
 
 record struct DeathEvent(Vector2 direction);
 
+struct DebugConfig() {
+    internal bool DebugColliders = false;
+    internal bool DebugFlowFields = false;
+    internal Entity? SystemIdColliders;
+    internal Entity? SystemIdFlow;
+}
+
 class Main : IFlecsModule {
     public void InitModule(World world) {
         Level.InitLevel(ref world);
+        world.Set(new DebugConfig());
 
         world.System<Shooter, GlobalTransform>()
             .Kind(Ecs.PreUpdate)
@@ -62,6 +71,28 @@ class Main : IFlecsModule {
             .Kind(Ecs.PostLoad)
             .Kind(Ecs.Disabled)
             .Run((it) => Console.WriteLine($"Entities: {it.World().Count(Ecs.Any)}"));
+
+        world.System<DebugConfig>()
+            .TermAt(0).Singleton()
+            .Kind(Ecs.PostLoad)
+            .Each(CheckDebugKeys);
+    }
+
+    private void CheckDebugKeys(ref DebugConfig conf) {
+        if (Raylib.IsKeyPressed(KeyboardKey.I)) {
+            conf.DebugColliders = !conf.DebugColliders;
+            if (conf.DebugColliders)
+                conf.SystemIdColliders!.Value.Enable();
+            else
+                conf.SystemIdColliders!.Value.Disable();
+        }
+        if (Raylib.IsKeyPressed(KeyboardKey.K)) {
+            conf.DebugFlowFields = !conf.DebugFlowFields;
+            if (conf.DebugFlowFields)
+                conf.SystemIdFlow!.Value.Enable();
+            else
+                conf.SystemIdFlow!.Value.Disable();
+        }
     }
 
     private void SetShooterTarget(Iter it, Field<Shooter> shooter, Field<GlobalTransform> transform) {

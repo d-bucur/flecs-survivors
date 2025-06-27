@@ -1,5 +1,4 @@
 ## priority 1
-- add keyboard shortcuts for debug systems
 - add remaining enemies
 - bullet sprites
 - add attack animations

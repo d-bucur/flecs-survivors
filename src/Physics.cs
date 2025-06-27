@@ -134,10 +134,12 @@ class PhysicsModule : IFlecsModule {
             .MultiThreaded()
             .Each(UpdateHeading);
 
-        world.System<GlobalTransform, PhysicsBody, Collider>()
+        var debugId = world.System<GlobalTransform, PhysicsBody, Collider>()
             .Kind<RenderPhase>()
-            // .Kind(Ecs.Disabled)
             .Iter(DebugColliders);
+        world.System<DebugConfig>()
+            .Kind(Ecs.OnStart)
+            .Each((ref DebugConfig conf) => { conf.SystemIdColliders = debugId; debugId.Disable(); });
     }
 
     private void EmitCollisionEvents(Entity e, ref Collider collider) {
@@ -228,9 +230,9 @@ class PhysicsModule : IFlecsModule {
                             // Calculate overlap vector
                             ref var t2 = ref e2.GetMut<Transform>();
                             var distance = t1.Pos - t2.Pos;
-							float distanceLen = distance.Length();
+                            float distanceLen = distance.Length();
                             var separation = c1.Radius + c2.Radius;
-							var penetration = separation - distanceLen;
+                            var penetration = separation - distanceLen;
                             if (penetration <= 0)
                                 continue;
 
