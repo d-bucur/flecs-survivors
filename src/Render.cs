@@ -20,8 +20,9 @@ struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER) {
     public OriginAlign Align = align;
     public Vector2? Origin = null;
     public Rectangle DrawSource;
+	public bool Flipped = false;
 
-    internal void SetDrawSource(Rectangle source) {
+	internal void SetDrawSource(Rectangle source) {
         DrawSource = source;
         if (Align == OriginAlign.BOTTOM_CENTER) {
             Origin = new Vector2(source.Width / 2, source.Height);
@@ -86,6 +87,11 @@ public struct Render : IFlecsModule {
             .Kind(Ecs.PreUpdate)
             .Each(UpdateCameraTransform);
 
+        world.System<Sprite, PhysicsBody>()
+            .TermAt(1).Up()
+            .Kind<RenderPhase>()
+            .Each(FlipSprites);
+
         world.System<Animator, Sprite, ContentManager>()
             .TermAt(2).Singleton()
             .Kind<RenderPhase>()
@@ -102,7 +108,11 @@ public struct Render : IFlecsModule {
             .Iter(InitCamera);
     }
 
-    private unsafe int OrderSprites(ulong e1, void* t1, ulong e2, void* t2) {
+    private void FlipSprites(ref Sprite s, ref PhysicsBody b) {
+        s.Flipped = b.Accel.X < 0;
+	}
+
+	private unsafe int OrderSprites(ulong e1, void* t1, ulong e2, void* t2) {
         var p1 = ((GlobalTransform*)t1)->Pos.Y;
         var p2 = ((GlobalTransform*)t2)->Pos.Y;
         return (int)(p1 - p2);
@@ -160,6 +170,9 @@ public struct Render : IFlecsModule {
                 Vector2 origin = sprite.Origin!.Value * transform[i].Scale;
                 Rectangle source = sprite.DrawSource;
                 var dest = new Rectangle(t.Pos, source.Width * t.Scale.X, source.Height * t.Scale.Y);
+                if (sprite.Flipped) {
+                    source.Width = -source.Width;
+                }
 
                 Raylib.DrawTexturePro(
                     sprite.Texture!.Value,
