@@ -104,7 +104,7 @@ class EnemiesModule : IFlecsModule {
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new Collider(17, CollisionFlags.ENEMY, CollisionFlags.ALL & ~CollisionFlags.POWERUP))
 			.Set(new Health((int)level))
-			.Observe<OnCollisionEnter>(HandleEnemyHit)
+			.Observe<OnCollisionEnter>(HandleEnemyCollision)
 			.Observe<DeathEvent>(HandleDeath);
 		var sprite = world.Entity("Sprite")
 			.Set(new Sprite("Content/sprites/packed2/characters.png"))
@@ -180,8 +180,12 @@ class EnemiesModule : IFlecsModule {
 			.ChildOf(power);
 	}
 
-	static void HandleEnemyHit(Entity enemy, ref OnCollisionEnter collision) {
+	static void HandleEnemyCollision(Entity enemy, ref OnCollisionEnter collision) {
 		const float PUSHBACK = 0.5f;
+		if (collision.Other.Has<Player>()) {
+			HandleCollisionWithPlayer(enemy, ref collision);
+			return;
+		}
 		if (!collision.Other.Has<Projectile>()) return;
 
 		ref var body = ref enemy.GetMut<PhysicsBody>();
@@ -201,9 +205,16 @@ class EnemiesModule : IFlecsModule {
 				).RegisterEcs();
 			}
 		});
-
-		// Console.WriteLine($"Hit by projectile: {entity} - {collision.Other}");
 		Main.DecreaseHealth(enemy, collision.Penetration);
+	}
+
+	private static void HandleCollisionWithPlayer(Entity enemy, ref OnCollisionEnter collision) {
+		var child = enemy.Lookup("Sprite");
+		ref var animator = ref child.GetMut<Animator>();
+		var sprite = child.Get<Sprite>();
+		var hasAttackAnimation = sprite.Packing?[animator.ObjectName].ContainsKey("attack");
+		if (hasAttackAnimation.GetValueOrDefault(false))
+			animator.PlayAnimation("attack");
 	}
 
 	static void HandleDeath(Entity e, ref DeathEvent death) {
@@ -211,9 +222,11 @@ class EnemiesModule : IFlecsModule {
 		var sprite = e.Lookup("Sprite");
 		sprite.SetName(null!);
 		Vector2 currentPos = new();
+		Vector2 prevScale = new();
 		sprite.Write((ref Transform t, ref GlobalTransform g) => {
 			t.Pos = g.Pos;
 			currentPos = g.Pos;
+			prevScale = g.Scale;
 		});
 		sprite.Remove(Ecs.ChildOf, e);
 		e.Destruct();
@@ -222,11 +235,11 @@ class EnemiesModule : IFlecsModule {
 		const int PUSHBACK = 50;
 		new Tween(sprite).With(
 			(ref Transform p, float v) => p.Rot = v,
-				0, 360, 1000, Ease.Linear,
-				(ref Transform p) => sprite.Destruct()
-			).With(
+			0, 360, 1000, Ease.Linear,
+			(ref Transform p) => sprite.Destruct()
+		).With(
 			(ref Transform p, float s) => p.Scale = new Vector2(s),
-			0.5f, 0, ANIM_TIME, Ease.Linear
+			prevScale.X, 0, ANIM_TIME, Ease.Linear
 		).With(
 			(ref Transform t, Vector2 p) => t.Pos = p,
 			currentPos, currentPos + death.direction.Normalized() * PUSHBACK, ANIM_TIME, Ease.QuartOut,

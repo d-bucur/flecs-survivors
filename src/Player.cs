@@ -23,7 +23,8 @@ class PlayerModule : IFlecsModule {
             .Set(new Heading())
             .Set(new Shooter(new List<IBulletPattern>([Weapons.PresetWeak])))
             .Set(new PowerCollector(200))
-            .Observe<OnCollisionEnter>(HandlePowerCollected);
+            .Observe<OnCollisionEnter>(HandlePowerCollected)
+            .Observe<OnCollisionEnter>(HandleCollisionWithEnemy);
         world.Entity()
             .Set(new Transform(new Vector2(0, 15), new Vector2(2f, 2f), 0))
             .Set(new Sprite("Content/sprites/packed2/characters.png"))
@@ -48,7 +49,7 @@ class PlayerModule : IFlecsModule {
             .Each(UpdateWeaponLevels);
     }
 
-    static void UpdateWeaponLevels(ref PowerCollector collector, ref Shooter shooter) {
+	static void UpdateWeaponLevels(ref PowerCollector collector, ref Shooter shooter) {
         var level = 1 + (uint)collector.Accumulated / 5;
         foreach (var weapon in shooter.Weapons) {
             if (weapon.Level == level) continue;
@@ -94,4 +95,8 @@ class PlayerModule : IFlecsModule {
         if (dir.Length() > 1) dir = Vector2.Normalize(dir);
         b.Accel = dir * PLAYER_ACCEL;
     }
+
+	private void HandleCollisionWithEnemy(Entity player, ref OnCollisionEnter collision) {
+		// TODO handle health loss
+	}
 }

@@ -86,13 +86,13 @@ public enum CollisionFlags {
 }
 
 class PhysicsModule : IFlecsModule {
+    #region Init
     public void InitModule(World world) {
         world.Set(new SpatialMap(30));
         world.Set(new SpatialQuery());
 
         // TODO update to GlobalTransform
-        world.System<Transform, PhysicsBody, GameCtx>("Integrate positions & velocities")
-            .TermAt(2).Singleton()
+        world.System<Transform, PhysicsBody>("Integrate positions & velocities")
             .Kind<PrePhysics>()
             .MultiThreaded()
             .Each(IntegratePosition);
@@ -143,6 +143,8 @@ class PhysicsModule : IFlecsModule {
             .Kind(Ecs.OnStart)
             .Each((ref DebugConfig conf) => { conf.SystemIdColliders = debugId; debugId.Disable(); });
     }
+    #endregion
+    #region Systems
 
     private void EmitCollisionEvents(Entity e, ref Collider collider) {
         foreach (var current in collider.collisionsCurrentFrame.Keys) {
@@ -268,7 +270,7 @@ class PhysicsModule : IFlecsModule {
         countdown.Wait();
     }
 
-    private void IntegratePosition(Entity e, ref Transform transform, ref PhysicsBody body, ref GameCtx ctx) {
+    private void IntegratePosition(Entity e, ref Transform transform, ref PhysicsBody body) {
         var dt = e.CsWorld().DeltaTime();
         body.Vel += body.Accel * dt;
         transform.Pos += body.Vel * dt;
@@ -287,4 +289,5 @@ class PhysicsModule : IFlecsModule {
         }
         Raylib.EndMode2D();
     }
+    #endregion
 }

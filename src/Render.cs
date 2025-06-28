@@ -20,9 +20,9 @@ struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER) {
     public OriginAlign Align = align;
     public Vector2? Origin = null;
     public Rectangle DrawSource;
-	public bool Flipped = false;
+    public bool Flipped = false;
 
-	internal void SetDrawSource(Rectangle source) {
+    internal void SetDrawSource(Rectangle source) {
         DrawSource = source;
         if (Align == OriginAlign.BOTTOM_CENTER) {
             Origin = new Vector2(source.Width / 2, source.Height);
@@ -36,17 +36,43 @@ enum OriginAlign {
     CENTER,
     BOTTOM_CENTER,
 }
+internal enum AnimationPlayMode {
+    Repeat,
+    Once,
+}
 
-record struct Animator(string Name, string CurrentAnimation = "default", float Speed = 1000f / 60f) {
+record struct Animator(
+    string ObjectName, // TODO object name in spritesheet not needed after holding only my own key
+    string CurrentAnimation = "default",
+    float Speed = 1000f / 60f,
+    AnimationPlayMode PlayMode = AnimationPlayMode.Repeat
+) {
     public int AnimationFrame = -1;
     public float TimeSinceUpdate = Speed;
+    string DefaultAnimation = CurrentAnimation;
 
     internal void Progress(float deltaTime, SpriteSheet.KeyframeRaw[] animationRects) {
         TimeSinceUpdate += deltaTime;
         while (TimeSinceUpdate > Speed) {
             TimeSinceUpdate -= Speed;
-            AnimationFrame = (AnimationFrame + 1) % animationRects.Length;
+            if (PlayMode == AnimationPlayMode.Repeat || AnimationFrame + 1 < animationRects.Length)
+                AnimationFrame = (AnimationFrame + 1) % animationRects.Length;
+            else {
+                AnimationFrame = 0;
+                CurrentAnimation = DefaultAnimation;
+                PlayMode = AnimationPlayMode.Repeat;
+            }
         }
+    }
+
+    // Check if animation exists needs to be done outside
+    internal void PlayAnimation(string name, AnimationPlayMode playMode = AnimationPlayMode.Once) {
+        if (CurrentAnimation == name)
+            return;
+        AnimationFrame = 0;
+        TimeSinceUpdate = 0;
+        CurrentAnimation = name;
+        PlayMode = playMode;
     }
 }
 
@@ -110,9 +136,9 @@ public struct Render : IFlecsModule {
 
     private void FlipSprites(ref Sprite s, ref PhysicsBody b) {
         s.Flipped = b.Accel.X < 0;
-	}
+    }
 
-	private unsafe int OrderSprites(ulong e1, void* t1, ulong e2, void* t2) {
+    private unsafe int OrderSprites(ulong e1, void* t1, ulong e2, void* t2) {
         var p1 = ((GlobalTransform*)t1)->Pos.Y;
         var p2 = ((GlobalTransform*)t2)->Pos.Y;
         return (int)(p1 - p2);
@@ -148,7 +174,7 @@ public struct Render : IFlecsModule {
         if (sprite.Packing is null)
             return; // static sprite
 
-        var animationRects = sprite.Packing[animator.Name][animator.CurrentAnimation];
+        var animationRects = sprite.Packing[animator.ObjectName][animator.CurrentAnimation];
         animator.Progress(e.CsWorld().DeltaTime(), animationRects);
         sprite.SetDrawSource(animationRects[animator.AnimationFrame]);
     }
