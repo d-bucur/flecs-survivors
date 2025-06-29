@@ -10,13 +10,13 @@ enum RenderPhase;
 enum PostRenderPhase;
 
 record struct Camera(Camera2D Value, int ScreenWidth, int ScreenHeight);
-record struct RenderCtx(Vec2I WinSize);
+record struct RenderCtx(Vec2I WinSize, Shader SpriteShader);
 
 struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER) {
     public string Path = Path; // TODO don't need path after loading
     public Texture2D? Texture = null;
     public PackingData? Packing = null; // TODO should only keep my own key
-    public Color Tint = Color.White;
+    public Color Tint = Color.Black;
     public OriginAlign Align = align;
     public Vector2? Origin = null;
     public Rectangle DrawSource;
@@ -181,8 +181,10 @@ public struct Render : IFlecsModule {
 
     void RenderSprites(Iter it) {
         var camera = cameraQuery.First().Get<Camera>();
+        var ctx = it.World().Get<RenderCtx>();
         var cutoffDistance = MathF.Pow(camera.ScreenWidth, 2);
         Raylib.BeginMode2D(camera.Value);
+        Raylib.BeginShaderMode(ctx.SpriteShader);
 
         while (it.Next()) {
             var transform = it.Field<GlobalTransform>(0);
@@ -210,6 +212,7 @@ public struct Render : IFlecsModule {
                 );
             }
         }
+        Raylib.EndShaderMode();
         Raylib.EndMode2D();
     }
 }

@@ -196,8 +196,8 @@ class EnemiesModule : IFlecsModule {
 			if (e.Has<Sprite>()) {
 				new Tween(e).With(
 					(ref Sprite s, Color t) => s.Tint = t,
-					Color.White,
 					Color.Black,
+					Color.Red,
 					300,
 					Ease.QuartOut,
 					Raylib.ColorLerp,

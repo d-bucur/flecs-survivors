@@ -62,7 +62,9 @@ public class Game {
             .With<RenderPhase>()
             .Build();
 
-        _world.Set(new RenderCtx(winSize));
+        // custom shader that support damage white flash
+        Shader spriteShader = Raylib.LoadShader("", "Content/shaders/frag.fs");
+        _world.Set(new RenderCtx(winSize, spriteShader));
         gameCtx = new();
         _world.Set(gameCtx);
         // _world.SetThreads(Environment.ProcessorCount);

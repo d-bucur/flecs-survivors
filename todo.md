@@ -1,20 +1,22 @@
 ## priority 1
-- add remaining enemies
+- add remaining enemies and anims
 - bullet sprites
 - tilesets. Use Ldtk maybe
 - revisit death animation
+- pushback should be in same direction and bullet velocity
+- temp invulnerability after hit
+- particle effects
 
 ## priority 2
 - player health and death
-- particle effects
 - juice:
   - dmg indicators?, particles
   - camera shake when hit
 - add sprite offset to sheet?
 
 ## priority 3
+- add AABB colliders for walls and maybe rotated rectangles?
 - ui & menus
-- add AABB colliders
 - sound
 - web build
 - better GlobalTransform using change detection on Transform https://www.flecs.dev/flecs/md_docs_2Queries.html#change-detection
