@@ -3,28 +3,26 @@
 - bullet sprites
 - tilesets. Use Ldtk maybe
 - revisit death animation
-- pushback should be in same direction and bullet velocity
-- temp invulnerability after hit
+- pushback should be in same direction as bullet velocity
 - particle effects
 
 ## priority 2
-- player health and death
 - juice:
   - dmg indicators?, particles
   - camera shake when hit
-- add sprite offset to sheet?
+- add AABB colliders for walls and maybe rotated rectangles?
 
 ## priority 3
-- add AABB colliders for walls and maybe rotated rectangles?
 - ui & menus
 - sound
 - web build
-- better GlobalTransform using change detection on Transform https://www.flecs.dev/flecs/md_docs_2Queries.html#change-detection
 - more weapon types
 - roguelite powerups
 
 ## priority 4
 - profiling
+- better GlobalTransform using change detection on Transform https://www.flecs.dev/flecs/md_docs_2Queries.html#change-detection
+- add sprite offset to sheet?
 - refactor: don't expose structs as fields: https://docs.flatredball.com/flatredball/contributing/general-programming-flatredball-programming-style-guide#structs-as-fields
 
 ## bugs

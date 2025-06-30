@@ -1,4 +1,7 @@
-## Phases
+# About
+WIP survivors game build using flecs, Raylib and C#
+
+# Phases
 Too many physics phases? maybe physics at the end of Update
 
 - OnLoad

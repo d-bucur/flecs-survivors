@@ -21,8 +21,10 @@ record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
 record struct Powerup(ulong Value = 1);
 record struct PowerCollector(float Range, ulong Accumulated = 0);
 
-record struct Health(int MaxValue = 1) {
+record struct Health(int MaxValue = 1, float OnLossInvulnTime = 300) {
     public int Value = MaxValue;
+    public bool IsInvulnerable = false;
+    public float TimeSinceInvuln = 0;
 }
 
 record struct FollowTarget(Entity Target, float FollowSpeed = 0.25f, float FollowAnticipation = 0);
@@ -54,6 +56,10 @@ class Main : IFlecsModule {
             .Kind(Ecs.PreUpdate)
             .Each(TickDespawnTimer);
 
+        world.System<Health>()
+            .Kind(Ecs.PreUpdate)
+            .Each(UpdateInvulnerabilities);
+
         world.System<Tween>()
             .Kind(Ecs.OnUpdate)
             .Immediate()
@@ -82,7 +88,7 @@ class Main : IFlecsModule {
             .Each(InputTimeScale);
     }
 
-	private void SetShooterTarget(Iter it, Field<Shooter> shooter, Field<GlobalTransform> transform) {
+    private void SetShooterTarget(Iter it, Field<Shooter> shooter, Field<GlobalTransform> transform) {
         // TODO cache query
         var qEnemies = it.World().QueryBuilder<GlobalTransform>().With<Enemy>().Build();
         foreach (var shooterId in it) {
@@ -187,21 +193,52 @@ class Main : IFlecsModule {
         }
     }
 
-    private static void HandleBulletHit(Entity e, ref OnCollisionEnter collision) {
-        if (collision.Other.Has<Scenery>()) e.Destruct();
+    private static void HandleBulletHit(Entity bulletEntity, ref OnCollisionEnter collision) {
+        if (collision.Other.Has<Scenery>()) bulletEntity.Destruct();
         if (!collision.Other.Has<Enemy>()) return;
-        DecreaseHealth(e, collision.Penetration);
+        DecreaseHealth(bulletEntity, collision.Penetration);
     }
 
-    public static void DecreaseHealth(Entity e, Vector2 direction) {
+    public static bool DecreaseHealth(Entity e, Vector2 direction) {
         ref var health = ref e.GetMut<Health>();
+        if (health.IsInvulnerable) return false;
         health.Value -= 1;
+        if (health.OnLossInvulnTime > 0) {
+            health.IsInvulnerable = true;
+            health.TimeSinceInvuln = 0;
+        }
         e.Modified<Health>();
-        if (health.Value <= 0) e.Emit(new DeathEvent(direction));
+        if (health.Value <= 0)
+            e.Emit(new DeathEvent(direction));
+        return true;
     }
 
     public static void SimpleDeath(Entity e, ref DeathEvent death) {
         e.Destruct();
+    }
+
+    private void UpdateInvulnerabilities(Entity e, ref Health health) {
+        if (!health.IsInvulnerable) return;
+        health.TimeSinceInvuln += e.CsWorld().DeltaTime();
+        if (health.TimeSinceInvuln > health.OnLossInvulnTime) {
+            health.IsInvulnerable = false;
+        }
+    }
+
+    public static void FlashDamage(Entity entity) {
+        entity.Children((e) => {
+            if (e.Has<Sprite>()) {
+                new Tween(e).With(
+                    (ref Sprite s, Color t) => s.Tint = t,
+                    Color.Black,
+                    Color.Red,
+                    300,
+                    Ease.QuartOut,
+                    Raylib.ColorLerp,
+                    AutoReverse: true
+                ).RegisterEcs();
+            }
+        });
     }
 
     private void CheckDebugKeys(ref DebugConfig conf) {
@@ -221,7 +258,7 @@ class Main : IFlecsModule {
         }
     }
 
-	private void InputTimeScale(ref GameCtx ctx) {
+    private void InputTimeScale(ref GameCtx ctx) {
         if (Raylib.IsKeyPressed(KeyboardKey.One)) {
             Console.WriteLine($"Timescale 1d");
             ctx.TimeScale = 0.2f;
@@ -235,5 +272,5 @@ class Main : IFlecsModule {
         if (Raylib.IsKeyPressed(KeyboardKey.Four)) {
             ctx.TimeScale = 2f;
         }
-	}
+    }
 }

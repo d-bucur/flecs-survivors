@@ -88,7 +88,6 @@ public class Game {
         Raylib.BeginTextureMode(frameBuffer);
         Raylib.ClearBackground(Color.DarkBlue);
         _world.RunPipeline(_renderPipeline, Raylib.GetFrameTime() * 1000 * gameCtx.TimeScale);
-        Raylib.DrawFPS(10, 10);
         Raylib.EndTextureMode();
 
         // TODO some issues. Resizing window doesn't update screen width (at least on linux)

@@ -37,6 +37,9 @@ Libraries:
 - https://www.speedscope.app/
 - https://benchmarkdotnet.org/
 
+# Shaders
+- https://learnopengl.com/getting-started/shaders
+
 # Other
 - https://ldtk.io/
 - https://www.mapeditor.org/

@@ -191,21 +191,8 @@ class EnemiesModule : IFlecsModule {
 		ref var body = ref enemy.GetMut<PhysicsBody>();
 		body.Vel = collision.Penetration.Normalized() * PUSHBACK;
 
-		// Flash effect
-		enemy.Children((e) => {
-			if (e.Has<Sprite>()) {
-				new Tween(e).With(
-					(ref Sprite s, Color t) => s.Tint = t,
-					Color.Black,
-					Color.Red,
-					300,
-					Ease.QuartOut,
-					Raylib.ColorLerp,
-					AutoReverse: true
-				).RegisterEcs();
-			}
-		});
-		Main.DecreaseHealth(enemy, collision.Penetration);
+		if (Main.DecreaseHealth(enemy, collision.Penetration))
+			Main.FlashDamage(enemy);
 	}
 
 	private static void HandleCollisionWithPlayer(Entity enemy, ref OnCollisionEnter collision) {

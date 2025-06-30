@@ -97,11 +97,13 @@ record struct ContentManager {
 }
 
 public struct Render : IFlecsModule {
-
-    Query<Camera> cameraQuery;
+    private Query<Camera> cameraQuery;
+    private Query<Health> playerHealthQuery;
 
     public unsafe void InitModule(World world) {
         cameraQuery = world.Query<Camera>();
+        playerHealthQuery = world.QueryBuilder<Health>().With<Player>().Build();
+
         world.Set(new ContentManager());
 
         world.Observer<Sprite, ContentManager>()
@@ -127,6 +129,10 @@ public struct Render : IFlecsModule {
             // TODO full sorting on each frame is expensive. Maybe some way to cache a more stable list using change detection?
             .OrderBy<GlobalTransform>(OrderSprites)
             .Run(RenderSprites);
+
+        world.System()
+            .Kind<RenderPhase>()
+            .Run(DrawUI);
 
         world.System()
             .With<Player>()
@@ -214,5 +220,23 @@ public struct Render : IFlecsModule {
         }
         Raylib.EndShaderMode();
         Raylib.EndMode2D();
+    }
+
+    private void DrawUI(Iter it) {
+        // var camera = cameraQuery.First().Get<Camera>();
+        var ctx = it.World().Get<RenderCtx>();
+        Raylib.DrawFPS(10, ctx.WinSize.Y - 30);
+        playerHealthQuery.Each((ref Health h) => {
+            string healthText = $"Health: {h.Value}/{h.MaxValue}";
+            DrawText(healthText, 10, 10, 20);
+        });
+        // TODO
+        DrawText("Progress:", 10, 40, 20);
+        DrawText("Entities:", 10, 70, 20);
+    }
+
+    private static void DrawText(string text, int x, int y, int fontSize) {
+        Raylib.DrawText(text, x + 2, y + 2, fontSize, Color.Black);
+        Raylib.DrawText(text, x, y, fontSize, Color.White);
     }
 }
