@@ -25,7 +25,7 @@ Start with hot reloading
 dotnet watch
 ```
 ## Errors
-Error handling inside systems doesn't work with .NET 9.0. Run with following to use old system that reports errors correctly 
+Error handling inside systems [doesn't work](https://github.com/BeanCheeseBurrito/Flecs.NET/issues/92) with .NET 9.0. Run with following to use old system that reports errors correctly 
 ```
 DOTNET_LegacyExceptionHandling=1 dotnet run
 ```

@@ -1,5 +1,4 @@
 ## priority 1
-- add remaining enemies and anims
 - bullet sprites
 - tilesets. Use Ldtk maybe
 - revisit death animation

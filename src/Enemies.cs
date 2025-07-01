@@ -7,12 +7,12 @@ using Raylib_cs;
 namespace flecs_test;
 
 record struct Enemy;
-record struct EnemySpawner(uint Level = 1);
+record struct EnemySpawner(uint Level = 1, uint MaxLevel = 0);
 
 class EnemiesModule : IFlecsModule {
 	#region init
 	public void InitModule(World world) {
-		world.Entity("EnemySpawner").Set(new EnemySpawner(1));
+		world.Entity("EnemySpawner").Set(new EnemySpawner(1, 10));
 
 		world.Set(new FlowField(50, 15));
 
@@ -79,7 +79,7 @@ class EnemiesModule : IFlecsModule {
 
 	#region systems
 	static void IncrementLevel(ref EnemySpawner spawner) {
-		if (spawner.Level >= 10) return;
+		if (spawner.Level >= spawner.MaxLevel && spawner.MaxLevel != 0) return;
 		spawner.Level += 1;
 		Console.WriteLine($"Enemy levels: {spawner.Level}");
 	}
@@ -112,6 +112,7 @@ class EnemiesModule : IFlecsModule {
 		PrepEnemyLevel(level, ref enemy, ref sprite);
 	}
 
+	#region enemy types
 	private static void PrepEnemyLevel(uint level, ref Entity enemy, ref Entity sprite) {
 		if (level == 1) {
 			sprite
@@ -135,35 +136,62 @@ class EnemiesModule : IFlecsModule {
 		}
 		if (level == 5) {
 			sprite
-				.Set(new Transform(new Vector2(0, 45), new Vector2(2f, 2f), 0))
-				.Set(new Animator("frost_curse", "run", 75));
+				.Set(new Transform(new Vector2(0, 70), new Vector2(3f, 3f), 0))
+				.Set(new Animator("knight2", "run", 75));
 		}
 		if (level == 6) {
+			sprite
+				.Set(new Transform(new Vector2(0, 70), new Vector2(3f, 3f), 0))
+				.Set(new Animator("knight3", "run", 75));
+		}
+		if (level == 7) {
+			sprite
+				.Set(new Transform(new Vector2(0, 70), new Vector2(3f, 3f), 0))
+				.Set(new Animator("knight4", "run", 75));
+		}
+		if (level == 8) {
 			sprite
 				.Set(new Transform(new Vector2(0, 45), new Vector2(2f, 2f), 0))
 				.Set(new Animator("sword", "walk", 75));
 		}
-		if (level == 7) {
-			sprite
-				.Set(new Transform(new Vector2(0, 60), new Vector2(2f, 2f), 0))
-				.Set(new Animator("dead", "idle", 75));
-		}
-		if (level == 8) {
-			sprite
-				.Set(new Transform(new Vector2(0, 120), new Vector2(2f, 2f), 0))
-				.Set(new Animator("dusk_druid", "walk", 75));
-		}
 		if (level == 9) {
-			sprite
-				.Set(new Transform(new Vector2(0, 110), new Vector2(2f, 2f), 0))
-				.Set(new Animator("evil_wizard", "walk", 75));
-		}
-		if (level == 10) {
 			sprite
 				.Set(new Transform(new Vector2(0, 40), new Vector2(1f, 1f), 0))
 				.Set(new Animator("wetland_boss", "walk", 75));
 		}
+		if (level == 10) {
+			sprite
+				.Set(new Transform(new Vector2(0, 60), new Vector2(2f, 2f), 0))
+				.Set(new Animator("dead", "idle", 75));
+		}
+		// Not happy with how there are working for now
+		// if (level == 8) {
+		// 	sprite
+		// 		.Set(new Transform(new Vector2(0, 45), new Vector2(2f, 2f), 0))
+		// 		.Set(new Animator("frost_curse", "run", 75));
+		// }
+		// if (level == 11) {
+		// 	sprite
+		// 		.Set(new Transform(new Vector2(0, 120), new Vector2(2f, 2f), 0))
+		// 		.Set(new Animator("dusk_druid", "walk", 75));
+		// }
+		// if (level == 12) {
+		// 	sprite
+		// 		.Set(new Transform(new Vector2(0, 120), new Vector2(2f, 2f), 0))
+		// 		.Set(new Animator("forest_mage", "walk", 75));
+		// }
+		// if (level == 13) {
+		// 	sprite
+		// 		.Set(new Transform(new Vector2(0, 110), new Vector2(2f, 2f), 0))
+		// 		.Set(new Animator("evil_wizard", "walk", 75));
+		// }
+		// if (level == 15) {
+		// 	sprite
+		// 		.Set(new Transform(new Vector2(0, 40), new Vector2(2f, 2f), 0))
+		// 		.Set(new Animator("necro", "walk", 75));
+		// }
 	}
+	#endregion
 
 	static void PowerupOnDeath(Iter it, int i, ref GlobalTransform t) {
 		// Spawn power pickup
