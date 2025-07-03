@@ -1,14 +1,14 @@
 ## priority 1
 - bullet sprites
-- tilesets. Use Ldtk maybe
-- revisit death animation
-- pushback should be in same direction as bullet velocity
 - particle effects
-
-## priority 2
 - juice:
   - dmg indicators?, particles
   - camera shake when hit
+- tilesets. Use Ldtk maybe
+- revisit death animation
+- pushback should be in same direction as bullet velocity
+
+## priority 2
 - add AABB colliders for walls and maybe rotated rectangles?
 
 ## priority 3

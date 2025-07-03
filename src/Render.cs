@@ -231,8 +231,8 @@ public struct Render : IFlecsModule {
             DrawText(healthText, 10, 10, 20);
         });
         // TODO
-        DrawText("Progress:", 10, 40, 20);
-        DrawText("Entities:", 10, 70, 20);
+        DrawText("Powerup:", 10, 40, 20);
+        DrawText($"Entities: {it.World().Count(Ecs.Any)}", 10, 70, 20);
     }
 
     private static void DrawText(string text, int x, int y, int fontSize) {

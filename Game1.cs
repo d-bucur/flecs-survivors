@@ -76,6 +76,7 @@ public class Game {
         _world.Import<Main>();
         _world.Import<PlayerModule>();
         _world.Import<EnemiesModule>();
+        _world.Import<ShootingModule>();
         // Ecs.Log.SetLevel(1);
     }
 
