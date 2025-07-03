@@ -16,6 +16,7 @@ enum PostPhysics;
 enum Trigger;
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1, float DragCoeff = 0.9f);
 record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DEFAULT, CollisionFlags MaskLayers = CollisionFlags.ALL) {
+    // TODO optimize: move dictionaries to separate struct
     public Dictionary<Id, Vector2> collisionsLastFrame = [];
     public Dictionary<Id, Vector2> collisionsCurrentFrame = [];
 }
@@ -79,7 +80,7 @@ public enum CollisionFlags {
     DEFAULT = 1,
     PLAYER = 2,
     ENEMY = 4,
-    PROJECTILE = 8,
+    BULLET = 8,
     POWERUP = 16,
     SCENERY = 32,
     ALL = ~0,
@@ -205,7 +206,7 @@ class PhysicsModule : IFlecsModule {
                     var e1 = world.GetAlive(e1Id);
                     // out of order calls into flecs like this are slow
                     // a more efficient call to get multiple components is an open issue
-                    // TODO use e1.Read();
+                    // TODO use e1.Read()/e1.Write()
                     ref var t1 = ref e1.GetMut<Transform>();
                     ref var b1 = ref e1.GetMut<PhysicsBody>();
                     ref var c1 = ref e1.GetMut<Collider>();

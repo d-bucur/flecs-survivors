@@ -13,7 +13,7 @@ record struct Shooter(List<IBulletPattern> Weapons, float Time = 0) {
     public Vector2? Target;
     public bool Enabled = true;
 }
-record struct Projectile;
+record struct Bullet;
 record struct Scenery;
 
 record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
@@ -154,18 +154,19 @@ class Main : IFlecsModule {
 
     static void SpawnBullet(World world, Vector2 pos, Vector2 dir) {
         Entity bullet = world.Entity()
-            .Add<Projectile>()
+            .Add<Bullet>()
             .Add<Trigger>()
             .Set(new Transform(pos, Vector2.One, 0))
             .Set(new PhysicsBody(dir, Vector2.Zero, DragCoeff: 1))
             .Set(new DespawnTimed(5000f))
-            .Set(new Collider(17, CollisionFlags.PROJECTILE, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.PROJECTILE))
+            .Set(new Collider(17, CollisionFlags.BULLET, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.BULLET))
             .Set(new Health(2))
             .Observe<OnCollisionEnter>(HandleBulletHit)
             .Observe<DeathEvent>(SimpleDeath);
         var sprite = world.Entity()
-            .Set(new Transform(new Vector2(0, 0), new Vector2(0.5f, 0.5f), 0))
-            .Set(new Sprite("Content/sprites/bee.png", OriginAlign.CENTER))
+            .Set(new Transform(new Vector2(0, 0), new Vector2(2, 2), 0))
+            .Set(new Sprite("Content/sprites/packed2/characters.png", OriginAlign.CENTER, new Color(146, 252, 245)))
+            .Set(new Animator("bullets", "bullet1", 75))
             .ChildOf(bullet);
         RotationTween(sprite).RegisterEcs();
     }
@@ -227,17 +228,19 @@ class Main : IFlecsModule {
 
     public static void FlashDamage(Entity entity) {
         entity.Children((e) => {
-            if (e.Has<Sprite>()) {
+            e.Read(((ref readonly Sprite sprite) => {
+                var startColor = sprite.Tint;
                 new Tween(e).With(
                     (ref Sprite s, Color t) => s.Tint = t,
-                    Color.Black,
-                    Color.Red,
+                    HSV.Hsv(0, 0, 0, 0),
+                    HSV.Hsv(0, 0, 0, 1),
                     300,
                     Ease.QuartOut,
                     Raylib.ColorLerp,
+                    OnEnd: (ref Sprite s) => s.Tint = startColor,
                     AutoReverse: true
                 ).RegisterEcs();
-            }
+            }));
         });
     }
 

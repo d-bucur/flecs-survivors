@@ -214,7 +214,7 @@ class EnemiesModule : IFlecsModule {
 			HandleCollisionWithPlayer(enemy, ref collision);
 			return;
 		}
-		if (!collision.Other.Has<Projectile>()) return;
+		if (!collision.Other.Has<Bullet>()) return;
 
 		ref var body = ref enemy.GetMut<PhysicsBody>();
 		body.Vel = collision.Penetration.Normalized() * PUSHBACK;

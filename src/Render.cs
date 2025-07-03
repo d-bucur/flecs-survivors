@@ -12,11 +12,11 @@ enum PostRenderPhase;
 record struct Camera(Camera2D Value, int ScreenWidth, int ScreenHeight);
 record struct RenderCtx(Vec2I WinSize, Shader SpriteShader);
 
-struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER) {
+struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER, Color? Tint = null) {
     public string Path = Path; // TODO don't need path after loading
     public Texture2D? Texture = null;
     public PackingData? Packing = null; // TODO should only keep my own key
-    public Color Tint = Color.Black;
+    public Color Tint = Tint.GetValueOrDefault(Color.White);
     public OriginAlign Align = align;
     public Vector2? Origin = null;
     public Rectangle DrawSource;
@@ -37,15 +37,15 @@ enum OriginAlign {
     BOTTOM_CENTER,
 }
 internal enum AnimationPlayMode {
-    Repeat,
-    Once,
+    REPEAT,
+    ONCE,
 }
 
 record struct Animator(
     string ObjectName, // TODO object name in spritesheet not needed after holding only my own key
     string CurrentAnimation = "default",
     float Speed = 1000f / 60f,
-    AnimationPlayMode PlayMode = AnimationPlayMode.Repeat
+    AnimationPlayMode PlayMode = AnimationPlayMode.REPEAT
 ) {
     public int AnimationFrame = -1;
     public float TimeSinceUpdate = Speed;
@@ -55,18 +55,18 @@ record struct Animator(
         TimeSinceUpdate += deltaTime;
         while (TimeSinceUpdate > Speed) {
             TimeSinceUpdate -= Speed;
-            if (PlayMode == AnimationPlayMode.Repeat || AnimationFrame + 1 < animationRects.Length)
+            if (PlayMode == AnimationPlayMode.REPEAT || AnimationFrame + 1 < animationRects.Length)
                 AnimationFrame = (AnimationFrame + 1) % animationRects.Length;
             else {
                 AnimationFrame = 0;
                 CurrentAnimation = DefaultAnimation;
-                PlayMode = AnimationPlayMode.Repeat;
+                PlayMode = AnimationPlayMode.REPEAT;
             }
         }
     }
 
     // Check if animation exists needs to be done outside
-    internal void PlayAnimation(string name, AnimationPlayMode playMode = AnimationPlayMode.Once) {
+    internal void PlayAnimation(string name, AnimationPlayMode playMode = AnimationPlayMode.ONCE) {
         if (CurrentAnimation == name)
             return;
         AnimationFrame = 0;

@@ -15,10 +15,14 @@ void main()
 {
     // Texel color fetching from texture sampler
     vec4 texelColor = texture(texture0, fragTexCoord) * colDiffuse;
-	finalColor.a = texelColor.a * fragColor.a;
-
-	// Use red channel for a white flashing effect (when taking damage)
-	finalColor.rgb = texelColor.rgb + fragColor.r;
-
-    // finalColor = vec4(gray, gray, gray, texelColor.a);
+	
+	vec3 zero = vec3(0, 0, 0);
+	if (fragColor.rgb == zero) {
+		// Flashing white effect if rgb = 0
+		finalColor.rgb = texelColor.rgb + fragColor.a;
+		finalColor.a = texelColor.a;
+	} else {
+		// otherwise modulate with vertex color
+		finalColor = texelColor * fragColor;
+	}
 }

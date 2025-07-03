@@ -25,7 +25,7 @@ record struct PropertyTween<C, P>(
 ) : IPropertyTween {
 	float CurrentTime = 0;
 	int CurrentRepetitions = 0;
-	int Repetitions = AutoReverse ? Repetitions * 2 : Repetitions;
+	readonly int Repetitions = AutoReverse ? Repetitions * 2 : Repetitions;
 
 	public void Tick(float delta, Entity ent) {
 		if (IsFinished()) return;
