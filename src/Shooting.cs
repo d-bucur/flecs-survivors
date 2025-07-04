@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Flecs.NET.Core;
@@ -5,10 +6,9 @@ using Raylib_cs;
 
 namespace flecs_test;
 
-
 record struct Shooter(List<IBulletPattern> Weapons, float Time = 0) {
-    public Vector2? Target;
-    public bool Enabled = true;
+	public Vector2? Target;
+	public bool Enabled = true;
 }
 record struct Bullet;
 
@@ -66,19 +66,42 @@ class ShootingModule : IFlecsModule {
 			.Set(new Collider(17, CollisionFlags.BULLET, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.BULLET))
 			.Set(new Health(2))
 			.Observe<OnCollisionEnter>(HandleBulletHit)
-			.Observe<DeathEvent>(Main.SimpleDeath);
+			.Observe<DeathEvent>(HandleBulletDeath);
 		var sprite = world.Entity()
 			.Set(new Transform(new Vector2(0, 0), new Vector2(2, 2), 0))
-			.Set(new Sprite("Content/sprites/packed2/characters.png", OriginAlign.CENTER, new Color(146, 252, 245)))
+			.Set(new Sprite(Textures.MEGA_SHEET, OriginAlign.CENTER, new Color(146, 252, 245)))
 			.Set(new Animator("bullets", "bullet1", 75))
 			.ChildOf(bullet);
 		// RotationTween(sprite).RegisterEcs();
 	}
 
 	private static void HandleBulletHit(Entity bulletEntity, ref OnCollisionEnter collision) {
-		if (collision.Other.Has<Scenery>()) bulletEntity.Destruct();
-		if (!collision.Other.Has<Enemy>()) return;
-		Main.DecreaseHealth(bulletEntity, collision.Penetration);
+		bool needFx = false;
+		// TODO bullet invuln and penetration not working correcly. Maybe should check collision in a single place for more control
+		if (collision.Other.Has<Enemy>()) {
+			needFx = Main.DecreaseHealth(bulletEntity, collision.Data.Penetration);
+		}
+		if (collision.Other.Has<Scenery>()) {
+			bulletEntity.Destruct();
+			needFx = true;
+		}
+		if (needFx) {
+			SpawnBulletFx(bulletEntity.CsWorld(), collision.Data.ContactPoint);
+		}
+	}
+
+	private static void HandleBulletDeath(Entity e, ref DeathEvent death) {
+		e.Destruct();
+	}
+
+	private static void SpawnBulletFx(World world, Vector2 position) {
+		var fx = world.Entity()
+			.Set(new Transform(position, Vector2.One, 0));
+		var sprite = world.Entity()
+			.Set(new Transform(new Vector2(0, 0), new Vector2(1, 1), 0))
+			.Set(new Sprite(Textures.MEGA_SHEET, OriginAlign.CENTER, new Color(146, 252, 245)))
+			.Set(new Animator("fx", "fx1", 34, OnFinishCb: () => fx.Destruct()))
+			.ChildOf(fx);
 	}
 
 	public static Tween RotationTween(Entity e) {

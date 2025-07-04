@@ -10,7 +10,7 @@ struct SpriteSheet {
 	public static PackingData? LoadSheet(string fileName) {
 		JsonSerializerOptions options = new();
 		options.UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow;
-        if (fileName == "Content/sprites/packed2/characters.png")
+        if (fileName == Textures.MEGA_SHEET)
             return JsonSerializer.Deserialize<PackingData>(File.ReadAllText("Content/sprites/packed2/characters_out.json"), options)!;
         else
             return null;

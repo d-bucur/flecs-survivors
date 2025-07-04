@@ -48,7 +48,7 @@ class PlayerModule : IFlecsModule {
             .Observe<OnCollisionEnter>(HandleCollisionWithEnemy);
 		world.Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(2f, 2f), 0))
-			.Set(new Sprite("Content/sprites/packed2/characters.png"))
+			.Set(new Sprite(Textures.MEGA_SHEET))
 			.Set(new Animator("Blue_witch", "charge", 75))
 			.ChildOf(player);
 		Console.WriteLine($"Player: {player.Id.Value}");
@@ -91,7 +91,7 @@ class PlayerModule : IFlecsModule {
         if (Raylib.IsMouseButtonPressed(MouseButton.Left)) mouseMovementEnabled = !mouseMovementEnabled;
         if (!mouseMovementEnabled) return;
 
-        var camera = e.CsWorld().Query<Camera>().First().Get<Camera>();
+        var camera = Render.cameraQuery.First().Get<Camera>();
         var screenPos = Raylib.GetMousePosition();
         var mousePosWorld = Raylib.GetScreenToWorld2D(screenPos, camera.Value);
 
@@ -103,12 +103,13 @@ class PlayerModule : IFlecsModule {
 
     private void HandleCollisionWithEnemy(Entity player, ref OnCollisionEnter collision) {
         if (!collision.Other.Has<Enemy>()) return;
-        if (Main.DecreaseHealth(player, collision.Penetration)) {
+        if (Main.DecreaseHealth(player, collision.Data.Penetration)) {
             if (player.Get<Health>().Value <= 0) {
                 // TODO restart level
                 Console.WriteLine($"Game Over");
             }
             Main.FlashDamage(player);
+            Main.CameraShake(10);
         }
 	}
 }

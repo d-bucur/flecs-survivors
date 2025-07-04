@@ -9,7 +9,9 @@ namespace flecs_test;
 enum RenderPhase;
 enum PostRenderPhase;
 
-record struct Camera(Camera2D Value, int ScreenWidth, int ScreenHeight);
+record struct Camera(Camera2D Value, int ScreenWidth, int ScreenHeight) {
+    public Camera2D Value = Value;
+}
 record struct RenderCtx(Vec2I WinSize, Shader SpriteShader);
 
 struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER, Color? Tint = null) {
@@ -36,16 +38,17 @@ enum OriginAlign {
     CENTER,
     BOTTOM_CENTER,
 }
+
 internal enum AnimationPlayMode {
     REPEAT,
     ONCE,
 }
-
 record struct Animator(
     string ObjectName, // TODO object name in spritesheet not needed after holding only my own key
     string CurrentAnimation = "default",
     float Speed = 1000f / 60f,
-    AnimationPlayMode PlayMode = AnimationPlayMode.REPEAT
+    AnimationPlayMode PlayMode = AnimationPlayMode.REPEAT,
+    Action? OnFinishCb = null
 ) {
     public int AnimationFrame = -1;
     public float TimeSinceUpdate = Speed;
@@ -55,12 +58,16 @@ record struct Animator(
         TimeSinceUpdate += deltaTime;
         while (TimeSinceUpdate > Speed) {
             TimeSinceUpdate -= Speed;
-            if (PlayMode == AnimationPlayMode.REPEAT || AnimationFrame + 1 < animationRects.Length)
+            bool isFrameBelowMax = AnimationFrame + 1 < animationRects.Length;
+            if (PlayMode == AnimationPlayMode.REPEAT || isFrameBelowMax)
                 AnimationFrame = (AnimationFrame + 1) % animationRects.Length;
             else {
                 AnimationFrame = 0;
                 CurrentAnimation = DefaultAnimation;
                 PlayMode = AnimationPlayMode.REPEAT;
+            }
+            if (!isFrameBelowMax) {
+                OnFinishCb?.Invoke();
             }
         }
     }
@@ -95,9 +102,12 @@ record struct ContentManager {
         return TexturesCache[path];
     }
 }
+readonly struct Textures {
+    public static readonly string MEGA_SHEET = "Content/sprites/packed2/characters.png";
+};
 
 public struct Render : IFlecsModule {
-    private Query<Camera> cameraQuery;
+    internal static Query<Camera> cameraQuery;
     private Query<Health> playerHealthQuery;
 
     public unsafe void InitModule(World world) {

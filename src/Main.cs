@@ -1,7 +1,6 @@
 using Flecs.NET.Core;
 using Raylib_cs;
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 
 namespace flecs_test;
@@ -11,6 +10,7 @@ namespace flecs_test;
 record struct Scenery;
 
 record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
+record struct FollowTarget(Entity Target, float FollowSpeed = 0.25f, float FollowAnticipation = 0);
 
 record struct Powerup(ulong Value = 1);
 record struct PowerCollector(float Range, ulong Accumulated = 0);
@@ -20,9 +20,6 @@ record struct Health(int MaxValue = 1, float OnLossInvulnTime = 300) {
     public bool IsInvulnerable = false;
     public float TimeSinceInvuln = 0;
 }
-
-record struct FollowTarget(Entity Target, float FollowSpeed = 0.25f, float FollowAnticipation = 0);
-
 record struct DeathEvent(Vector2 direction);
 
 struct DebugConfig() {
@@ -118,6 +115,8 @@ class Main : IFlecsModule {
         }
     }
 
+    /// <param name="direction">Direction of damage</param>
+    /// <returns>true if decrease was succesful (if target was not invulnerable), false otherwise</returns>
     public static bool DecreaseHealth(Entity e, Vector2 direction) {
         ref var health = ref e.GetMut<Health>();
         if (health.IsInvulnerable) return false;
@@ -194,4 +193,15 @@ class Main : IFlecsModule {
             ctx.TimeScale = 2f;
         }
     }
+
+    internal static void CameraShake(float intensity) {
+        var cam = Render.cameraQuery.First();
+        cam.Read((ref readonly Camera c) => {
+            var startOffset = c.Value.Offset;
+            new Tween(cam).With(
+                (ref Camera c, float v) => c.Value.Offset = startOffset + new Vector2(intensity * MathF.Sin(v * MathF.PI * 2), 0),
+                0, 1, 300, Ease.QuartOut
+            ).RegisterEcs();
+        });
+	}
 }

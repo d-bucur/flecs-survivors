@@ -1,22 +1,19 @@
 ## priority 1
-- bullet sprites
-- particle effects
-- juice:
-  - dmg indicators?, particles
-  - camera shake when hit
 - tilesets. Use Ldtk maybe
-- revisit death animation
 - pushback should be in same direction as bullet velocity
 
 ## priority 2
 - add AABB colliders for walls and maybe rotated rectangles?
+- ui
+- menus & scenes
 
 ## priority 3
-- ui & menus
+- juice:
+  - dmg indicators?, custom particles?
 - sound
-- web build
 - more weapon types
 - roguelite powerups
+- web build
 
 ## priority 4
 - profiling
@@ -25,8 +22,8 @@
 - refactor: don't expose structs as fields: https://docs.flatredball.com/flatredball/contributing/general-programming-flatredball-programming-style-guide#structs-as-fields
 
 ## bugs
-- bug: spread rotation is not centered
-- flow field LoS and jankiness
-- bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why
-- bug: wonky movement ever since added multithreading
 - bug sprite sorting not working correctly for large sprites. should add origin to sprite and consider it when sorting
+- flow field LoS and jankiness (enemies don't go directly towards player)
+- bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why
+- bug: wonky displacement ever since added multithreading
+- bug: spread rotation is not centered

@@ -15,10 +15,11 @@ enum PostPhysics;
 
 enum Trigger;
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1, float DragCoeff = 0.9f);
+record struct Collision(Vector2 ContactPoint, Vector2 Penetration);
 record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DEFAULT, CollisionFlags MaskLayers = CollisionFlags.ALL) {
     // TODO optimize: move dictionaries to separate struct
-    public Dictionary<Id, Vector2> collisionsLastFrame = [];
-    public Dictionary<Id, Vector2> collisionsCurrentFrame = [];
+    public Dictionary<Id, Collision> collisionsLastFrame = [];
+    public Dictionary<Id, Collision> collisionsCurrentFrame = [];
 }
 record struct SpatialMap(float CellSize) {
     // Could try to profile HybridDictionary
@@ -68,7 +69,7 @@ record struct SpatialQuery() {
 }
 
 // TODO add collision data like directions
-record struct OnCollisionEnter(Entity Other, Vector2 Penetration);
+record struct OnCollisionEnter(Entity Other, Collision Data);
 record struct OnCollisionExit(Entity Other);
 record struct OnCollisionStay(Entity Other);
 
@@ -243,8 +244,12 @@ class PhysicsModule : IFlecsModule {
 
                             // Register collision
                             var penetrationVec = distance / distanceLen * penetration;
-                            if (canE1Collide) c1.collisionsCurrentFrame.Add(e2.Id, penetrationVec);
-                            if (canE2Collide) c2.collisionsCurrentFrame.Add(e1.Id, -penetrationVec);
+                            // TODO contact point not precise, should consider displacement below
+                            var contactPoint = t1.Pos - penetrationVec / 2;
+                            if (canE1Collide)
+                                c1.collisionsCurrentFrame.Add(e2.Id, new Collision(contactPoint, penetrationVec));
+                            if (canE2Collide)
+                                c2.collisionsCurrentFrame.Add(e1.Id, new Collision(contactPoint, -penetrationVec));
                             // Console.WriteLine($"Collision between {e1.Id} and {e2.Id}");
 
                             // Displace only if no triggers
@@ -279,7 +284,7 @@ class PhysicsModule : IFlecsModule {
     }
 
     private void DebugColliders(Iter it, Field<GlobalTransform> transform, Field<PhysicsBody> body, Field<Collider> collider) {
-        var camera = it.World().Query<Camera>().First().Get<Camera>();
+        var camera = Render.cameraQuery.First().Get<Camera>();
         Raylib.BeginMode2D(camera.Value);
         foreach (int i in it) {
             var hue = 0f;

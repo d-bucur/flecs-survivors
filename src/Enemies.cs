@@ -105,9 +105,9 @@ class EnemiesModule : IFlecsModule {
 			.Set(new Collider(17, CollisionFlags.ENEMY, CollisionFlags.ALL & ~CollisionFlags.POWERUP))
 			.Set(new Health((int)level))
 			.Observe<OnCollisionEnter>(HandleEnemyCollision)
-			.Observe<DeathEvent>(HandleDeath);
+			.Observe<DeathEvent>(HandleEnemyDeath);
 		var sprite = world.Entity("Sprite")
-			.Set(new Sprite("Content/sprites/packed2/characters.png"))
+			.Set(new Sprite(Textures.MEGA_SHEET))
 			.ChildOf(enemy);
 		PrepEnemyLevel(level, ref enemy, ref sprite);
 	}
@@ -217,9 +217,9 @@ class EnemiesModule : IFlecsModule {
 		if (!collision.Other.Has<Bullet>()) return;
 
 		ref var body = ref enemy.GetMut<PhysicsBody>();
-		body.Vel = collision.Penetration.Normalized() * PUSHBACK;
+		body.Vel = collision.Data.Penetration.Normalized() * PUSHBACK;
 
-		if (Main.DecreaseHealth(enemy, collision.Penetration))
+		if (Main.DecreaseHealth(enemy, collision.Data.Penetration))
 			Main.FlashDamage(enemy);
 	}
 
@@ -232,7 +232,7 @@ class EnemiesModule : IFlecsModule {
 			animator.PlayAnimation("attack");
 	}
 
-	static void HandleDeath(Entity e, ref DeathEvent death) {
+	static void HandleEnemyDeath(Entity e, ref DeathEvent death) {
 		// Remove child with sprite from hierarchy and animate it out
 		var sprite = e.Lookup("Sprite");
 		sprite.SetName(null!);
