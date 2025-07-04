@@ -24,7 +24,7 @@ record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DE
 record struct SpatialMap(float CellSize) {
     // Could try to profile HybridDictionary
     public ConcurrentDictionary<Vec2I, List<ulong>> Map = new(-1, 10);
-    public Pool<List<ulong>> pool = new(
+    public Pool<List<ulong>> arraysPool = new(
         () => new List<ulong>(3),
         (l) => l.Clear(),
         50
@@ -103,7 +103,7 @@ class PhysicsModule : IFlecsModule {
             .Kind<PrePhysics>()
             .Each((ref SpatialMap s) => {
                 foreach (var (k, l) in s.Map)
-                    s.pool.Free(l);
+                    s.arraysPool.Free(l);
                 s.Map.Clear();
             });
 
@@ -177,7 +177,7 @@ class PhysicsModule : IFlecsModule {
     private void BuildSpatialHash(Entity e, ref Transform transform, ref SpatialMap map) {
         var key = map.PosToKey(transform.Pos);
         map.Map.TryGetValue(key, out List<ulong>? val);
-        val ??= map.pool.Obtain();
+        val ??= map.arraysPool.Obtain();
         val.Add(e.Id.Value);
         map.Map[key] = val;
     }

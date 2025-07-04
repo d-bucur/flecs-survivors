@@ -27,3 +27,4 @@
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why
 - bug: wonky displacement ever since added multithreading
 - bug: spread rotation is not centered
+- bug: multiple flashes on same sprite change initial color

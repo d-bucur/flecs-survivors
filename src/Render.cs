@@ -6,6 +6,7 @@ using Raylib_cs;
 
 namespace flecs_test;
 
+#region Components
 enum RenderPhase;
 enum PostRenderPhase;
 
@@ -105,16 +106,23 @@ record struct ContentManager {
 readonly struct Textures {
     public static readonly string MEGA_SHEET = "Content/sprites/packed2/characters.png";
 };
+#endregion
 
 public struct Render : IFlecsModule {
     internal static Query<Camera> cameraQuery;
     private Query<Health> playerHealthQuery;
 
+    #region Init
     public unsafe void InitModule(World world) {
         cameraQuery = world.Query<Camera>();
         playerHealthQuery = world.QueryBuilder<Health>().With<Player>().Build();
 
         world.Set(new ContentManager());
+
+        world.System()
+            .With<Player>()
+            .Kind(Ecs.OnStart)
+            .Iter(InitCamera);
 
         world.Observer<Sprite, ContentManager>()
             .Event(Ecs.OnSet)
@@ -134,6 +142,7 @@ public struct Render : IFlecsModule {
             .TermAt(2).Singleton()
             .Kind<RenderPhase>()
             .Each(UpdateAnimator);
+
         world.System<GlobalTransform, Sprite>()
             .Kind<RenderPhase>()
             // TODO full sorting on each frame is expensive. Maybe some way to cache a more stable list using change detection?
@@ -143,13 +152,10 @@ public struct Render : IFlecsModule {
         world.System()
             .Kind<RenderPhase>()
             .Run(DrawUI);
-
-        world.System()
-            .With<Player>()
-            .Kind(Ecs.OnStart)
-            .Iter(InitCamera);
     }
+    #endregion
 
+    #region Systems
     private void FlipSprites(ref Sprite s, ref PhysicsBody b) {
         s.Flipped = b.Accel.X < 0;
     }
@@ -249,4 +255,5 @@ public struct Render : IFlecsModule {
         Raylib.DrawText(text, x + 2, y + 2, fontSize, Color.Black);
         Raylib.DrawText(text, x, y, fontSize, Color.White);
     }
+    #endregion
 }
