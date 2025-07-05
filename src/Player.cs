@@ -15,29 +15,31 @@ class PlayerModule : IFlecsModule {
     const float PLAYER_ACCEL = 2f / 1000;
 
     public void InitModule(World world) {
-		InitPlayer(world);
+        InitPlayer(ref world);
+        world.Set(new Controls());
 
-		world.Set(new Controls());
+        world.System<PhysicsBody, Shooter>()
+            .With<Player>()
+            .Kind(Ecs.PostLoad)
+            .Each(PlayerKeyInput);
 
-		world.System<PhysicsBody, Shooter>()
-			.With<Player>()
-			.Kind(Ecs.PostLoad)
-			.Each(PlayerKeyInput);
+        world.System<PhysicsBody, GlobalTransform>()
+            .With<Player>()
+            .Kind(Ecs.PostLoad)
+            .Each(PlayerMouseInput); ;
 
-		world.System<PhysicsBody, GlobalTransform>()
-			.With<Player>()
-			.Kind(Ecs.PostLoad)
-			.Each(PlayerMouseInput); ;
+        world.Observer<PowerCollector, Shooter>()
+            .Event(Ecs.OnSet)
+            .Each(UpdateWeaponLevels);
+    }
 
-		world.Observer<PowerCollector, Shooter>()
-			.Event(Ecs.OnSet)
-			.Each(UpdateWeaponLevels);
-	}
+    private void InitPlayer(ref World world) {
+        var map = world.Get<Tiled.TiledMap>();
+        var start = new Vector2(map.Width * map.TileWidth / 2, map.Height * map.TileHeight / 2);
 
-	private void InitPlayer(World world) {
-		Entity player = world.Entity("Player")
+        Entity player = world.Entity("Player")
             .Add<Player>()
-            .Set(new Transform(new Vector2(10, 20), Vector2.One, 0))
+            .Set(new Transform(start, Vector2.One, 0))
             .Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0.2f, 0.85f))
             .Set(new Collider(17, CollisionFlags.PLAYER, CollisionFlags.ALL & ~CollisionFlags.BULLET))
             .Set(new Heading())
@@ -46,15 +48,15 @@ class PlayerModule : IFlecsModule {
             .Set(new Health(10, 500))
             .Observe<OnCollisionEnter>(HandlePowerCollected)
             .Observe<OnCollisionEnter>(HandleCollisionWithEnemy);
-		world.Entity()
-			.Set(new Transform(new Vector2(0, 15), new Vector2(2f, 2f), 0))
-			.Set(new Sprite(Textures.MEGA_SHEET))
-			.Set(new Animator("Blue_witch", "charge", 75))
-			.ChildOf(player);
-		Console.WriteLine($"Player: {player.Id.Value}");
-	}
+        world.Entity()
+            .Set(new Transform(new Vector2(0, 15), new Vector2(2f, 2f), 0))
+            .Set(new Sprite(Textures.MEGA_SHEET))
+            .Set(new Animator("Blue_witch", "charge", 75))
+            .ChildOf(player);
+        Console.WriteLine($"Player: {player.Id.Value}");
+    }
 
-	static void UpdateWeaponLevels(ref PowerCollector collector, ref Shooter shooter) {
+    static void UpdateWeaponLevels(ref PowerCollector collector, ref Shooter shooter) {
         var level = 1 + (uint)collector.Accumulated / 5;
         foreach (var weapon in shooter.Weapons) {
             if (weapon.Level == level) continue;
@@ -111,5 +113,5 @@ class PlayerModule : IFlecsModule {
             Main.FlashDamage(player);
             Main.CameraShake(10);
         }
-	}
+    }
 }

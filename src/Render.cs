@@ -143,6 +143,10 @@ public struct Render : IFlecsModule {
             .Kind<RenderPhase>()
             .Each(UpdateAnimator);
 
+        world.System<Tiled.TiledMap>()
+            .Kind<RenderPhase>()
+            .Each(RenderTiledMap);
+
         world.System<GlobalTransform, Sprite>()
             .Kind<RenderPhase>()
             // TODO full sorting on each frame is expensive. Maybe some way to cache a more stable list using change detection?
@@ -169,12 +173,14 @@ public struct Render : IFlecsModule {
     static void InitCamera(Iter it) {
         var world = it.World();
         var renderCtx = world.Get<RenderCtx>();
-        var playerEntity = world.QueryBuilder<Transform>().With<Player>().Build().First();
-        var cameraOffset = renderCtx.WinSize / 2;
-        world.Entity("Camera")
-            .Set(new Camera(new Camera2D(cameraOffset.ToVector2(), Vector2.Zero, 0, 1), 800, 480))
-            .Set(new Transform(Vector2.Zero, Vector2.One))
-            .Set(new FollowTarget(playerEntity));
+        world.QueryBuilder<Transform>().With<Player>().Build()
+        .Each((Entity player, ref Transform playerTransf) => {
+            var cameraOffset = renderCtx.WinSize / 2;
+            world.Entity("Camera")
+                .Set(new Camera(new Camera2D(cameraOffset.ToVector2(), Vector2.Zero, 0, 1), 800, 480))
+                .Set(new Transform(playerTransf.Pos, Vector2.One))
+                .Set(new FollowTarget(player));
+        });
     }
 
     static void UpdateCameraTransform(ref Camera camera, ref GlobalTransform global) {
@@ -204,7 +210,7 @@ public struct Render : IFlecsModule {
     void RenderSprites(Iter it) {
         var camera = cameraQuery.First().Get<Camera>();
         var ctx = it.World().Get<RenderCtx>();
-        var cutoffDistance = MathF.Pow(camera.ScreenWidth, 2);
+        var cutoffDistance = GetCutoffDistance(camera);
         Raylib.BeginMode2D(camera.Value);
         Raylib.BeginShaderMode(ctx.SpriteShader);
 
@@ -238,7 +244,45 @@ public struct Render : IFlecsModule {
         Raylib.EndMode2D();
     }
 
-    private void DrawUI(Iter it) {
+    private static void RenderTiledMap(Entity e, ref Tiled.TiledMap map) {
+		var camera = cameraQuery.First().Get<Camera>();
+		var ctx = e.CsWorld().Get<RenderCtx>();
+		var cutoffDistance = GetCutoffDistance(camera);
+		Raylib.BeginMode2D(camera.Value);
+		Raylib.BeginShaderMode(ctx.SpriteShader);
+
+		foreach (var layer in map.Layers) {
+			if (!layer.Visible) continue;
+			for (int i = 0; i < layer.Tiles.Length; i++) {
+				int tile = layer.Tiles[i];
+				if (tile == 0) continue;
+
+				var y = Math.DivRem(i, layer.Width, out var x);
+				var pos = new Vector2(x * map.TileWidth, y * map.TileHeight);
+				// skip if too far away from camera
+				if ((pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
+
+				var (texture, source) = map.GetCellData(tile);
+				var dest = new Rectangle(pos, map.TileWidth, map.TileHeight);
+				Raylib.DrawTexturePro(
+					texture,
+					source,
+					dest,
+					Vector2.Zero,
+					0,
+					Color.White
+				);
+			}
+		}
+		Raylib.EndShaderMode();
+		Raylib.EndMode2D();
+	}
+
+	private static float GetCutoffDistance(Camera camera) {
+		return (camera.ScreenWidth * camera.ScreenWidth + camera.ScreenHeight * camera.ScreenHeight) * 0.6f;
+	}
+
+	private void DrawUI(Iter it) {
         // var camera = cameraQuery.First().Get<Camera>();
         var ctx = it.World().Get<RenderCtx>();
         Raylib.DrawFPS(10, ctx.WinSize.Y - 30);

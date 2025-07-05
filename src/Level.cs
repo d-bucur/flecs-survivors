@@ -7,8 +7,13 @@ namespace flecs_test;
 class Level {
     public static void InitLevel(ref World world) {
         // RandomGrid(ref world);
-        FixedWalls(ref world);
+        // FixedWalls(ref world);
         // FieldTestGrid(ref world);
+
+        var map = TiledMapLoader.LoadMap(ref world.GetMut<ContentManager>());
+        map.TileHeight *= 4;
+        map.TileWidth *= 4;
+        world.Set(map);
     }
 
     static void RandomGrid(ref World world) {

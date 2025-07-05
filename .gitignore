@@ -404,3 +404,6 @@ FodyWeavers.xsd
 Content/sprites
 *.bmp
 *.ico
+Content/tileset/Texture/*
+Content/tileset/*tmx
+Content/tileset/old-proj/*

@@ -203,5 +203,5 @@ class Main : IFlecsModule {
                 0, 1, 300, Ease.QuartOut
             ).RegisterEcs();
         });
-	}
+    }
 }
