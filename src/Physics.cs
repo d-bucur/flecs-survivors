@@ -16,11 +16,12 @@ enum PostPhysics;
 enum Trigger;
 record struct PhysicsBody(Vector2 Vel, Vector2 Accel, float BounceCoeff = 1, float DragCoeff = 0.9f);
 record struct Collision(Vector2 ContactPoint, Vector2 Penetration);
-record struct Collider(float Radius, CollisionFlags MyLayers = CollisionFlags.DEFAULT, CollisionFlags MaskLayers = CollisionFlags.ALL) {
+record struct Collider(IColliderShape ColliderShape, CollisionFlags MyLayers = CollisionFlags.DEFAULT, CollisionFlags MaskLayers = CollisionFlags.ALL) {
     // TODO optimize: move dictionaries to separate struct
     public Dictionary<Id, Collision> collisionsLastFrame = [];
     public Dictionary<Id, Collision> collisionsCurrentFrame = [];
 }
+
 record struct SpatialMap(float CellSize) {
     // Could try to profile HybridDictionary
     public ConcurrentDictionary<Vec2I, List<ulong>> Map = new(-1, 10);
@@ -235,15 +236,12 @@ class PhysicsModule : IFlecsModule {
 
                             // Calculate overlap vector
                             ref var t2 = ref e2.GetMut<Transform>();
-                            var distance = t1.Pos - t2.Pos;
-                            float distanceLen = distance.Length();
-                            var separation = c1.Radius + c2.Radius;
-                            var penetration = separation - distanceLen;
-                            if (penetration <= 0)
+                            var penData = c1.ColliderShape.GetPenetrationVec(c2.ColliderShape, ref t1, ref t2);
+                            if (penData is null)
                                 continue;
+                            var (penetrationVec, distance, penetration) = penData.Value;
 
                             // Register collision
-                            var penetrationVec = distance / distanceLen * penetration;
                             // TODO contact point not precise, should consider displacement below
                             var contactPoint = t1.Pos - penetrationVec / 2;
                             if (canE1Collide)
@@ -290,7 +288,12 @@ class PhysicsModule : IFlecsModule {
             var hue = 0f;
             if (it.Entity(i).Has<Trigger>()) hue = 200f;
             Color color = HSV.Hsv(hue, 0.8f, 1f, 0.5f);
-            Raylib.DrawCircleV(transform[i].Pos, collider[i].Radius, color);
+            switch (collider[i].ColliderShape) {
+                case SphereCollider s:
+                    Raylib.DrawCircleV(transform[i].Pos, s.Radius, color);
+                    break;
+            }
+
             Raylib.DrawLineV(transform[i].Pos, transform[i].Pos + body[i].Vel * 100, Color.Green);
         }
         Raylib.EndMode2D();

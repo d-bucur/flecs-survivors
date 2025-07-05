@@ -41,7 +41,7 @@ class PlayerModule : IFlecsModule {
             .Add<Player>()
             .Set(new Transform(start, Vector2.One, 0))
             .Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0.2f, 0.85f))
-            .Set(new Collider(17, CollisionFlags.PLAYER, CollisionFlags.ALL & ~CollisionFlags.BULLET))
+            .Set(new Collider(new SphereCollider(17), CollisionFlags.PLAYER, CollisionFlags.ALL & ~CollisionFlags.BULLET))
             .Set(new Heading())
             .Set(new Shooter(new List<IBulletPattern>([Weapons.PresetWeak])))
             .Set(new PowerCollector(200))

@@ -102,7 +102,7 @@ class EnemiesModule : IFlecsModule {
 			.Add<Enemy>()
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
-			.Set(new Collider(17, CollisionFlags.ENEMY, CollisionFlags.ALL & ~CollisionFlags.POWERUP))
+			.Set(new Collider(new SphereCollider(17), CollisionFlags.ENEMY, CollisionFlags.ALL & ~CollisionFlags.POWERUP))
 			.Set(new Health((int)level))
 			.Observe<OnCollisionEnter>(HandleEnemyCollision)
 			.Observe<DeathEvent>(HandleEnemyDeath);
@@ -201,7 +201,7 @@ class EnemiesModule : IFlecsModule {
 			.Set(new Transform(t.Pos, Vector2.One, 0))
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new DespawnTimed(30000f))
-			.Set(new Collider(15, CollisionFlags.POWERUP, CollisionFlags.PLAYER));
+			.Set(new Collider(new SphereCollider(15), CollisionFlags.POWERUP, CollisionFlags.PLAYER));
 		it.World().Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("Content/sprites/slime.png"))

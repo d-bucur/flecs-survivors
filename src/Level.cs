@@ -50,7 +50,7 @@ class Level {
             .Add<Scenery>()
             .Set(new Transform(position, Vector2.One, 0))
             .Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0))
-            .Set(new Collider(25, CollisionFlags.SCENERY, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.SCENERY));
+            .Set(new Collider(new SphereCollider(25), CollisionFlags.SCENERY, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.SCENERY));
         world.Entity()
             .Set(new Transform(new Vector2(0, 30), new Vector2(1f, 1f), 0))
             .Set(new Sprite("Content/sprites/grassBlock.png"))

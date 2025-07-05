@@ -63,7 +63,7 @@ class ShootingModule : IFlecsModule {
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(dir, Vector2.Zero, DragCoeff: 1))
 			.Set(new DespawnTimed(5000f))
-			.Set(new Collider(17, CollisionFlags.BULLET, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.BULLET))
+			.Set(new Collider(new SphereCollider(17), CollisionFlags.BULLET, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.BULLET))
 			.Set(new Health(2))
 			.Observe<OnCollisionEnter>(HandleBulletHit)
 			.Observe<DeathEvent>(HandleBulletDeath);

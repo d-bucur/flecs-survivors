@@ -19,6 +19,7 @@
 - better GlobalTransform using change detection on Transform https://www.flecs.dev/flecs/md_docs_2Queries.html#change-detection
 - add sprite offset to sheet?
 - refactor: don't expose structs as fields: https://docs.flatredball.com/flatredball/contributing/general-programming-flatredball-programming-style-guide#structs-as-fields
+- cache queries: https://www.flecs.dev/flecs/md_docs_2Queries.html#performance-and-caching
 
 ## bugs
 - bug sprite sorting not working correctly for large sprites. should add origin to sprite and consider it when sorting
