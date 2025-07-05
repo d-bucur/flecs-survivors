@@ -88,7 +88,7 @@ class TiledMapLoader {
 			Width = m.Width,
 			TileWidth = m.TileWidth,
 			TileHeight = m.TileHeight,
-			Layers = m.Layers.OrderBy(l => l.Id)
+			Layers = m.Layers
 				.Select(l => new Tiled.Layer {
 					Width = l.Width,
 					Height = l.Height,

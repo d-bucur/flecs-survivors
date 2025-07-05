@@ -1,18 +1,17 @@
 ## priority 1
-- tilesets. Use Ldtk maybe
+- add circle colliders to walls
+- add AABB colliders for walls and maybe rotated rectangles?
 - pushback should be in same direction as bullet velocity
 
 ## priority 2
-- add AABB colliders for walls and maybe rotated rectangles?
 - ui
-- menus & scenes
-
-## priority 3
-- juice:
-  - dmg indicators?, custom particles?
-- sound
+- menus & scenes (states and sub states)
 - more weapon types
 - roguelite powerups
+
+## priority 3
+- juice: dmg indicators?, custom particles?
+- sound
 - web build
 
 ## priority 4

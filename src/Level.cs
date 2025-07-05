@@ -11,8 +11,8 @@ class Level {
         // FieldTestGrid(ref world);
 
         var map = TiledMapLoader.LoadMap(ref world.GetMut<ContentManager>());
-        map.TileHeight *= 4;
-        map.TileWidth *= 4;
+        map.TileHeight *= 2;
+        map.TileWidth *= 2;
         world.Set(map);
     }
 

@@ -290,8 +290,8 @@ class PhysicsModule : IFlecsModule {
             var hue = 0f;
             if (it.Entity(i).Has<Trigger>()) hue = 200f;
             Color color = HSV.Hsv(hue, 0.8f, 1f, 0.5f);
-            Raylib.DrawCircleLinesV(transform[i].Pos, collider[i].Radius, color);
-            Raylib.DrawLineV(transform[i].Pos, transform[i].Pos + body[i].Vel * 10, Color.Green);
+            Raylib.DrawCircleV(transform[i].Pos, collider[i].Radius, color);
+            Raylib.DrawLineV(transform[i].Pos, transform[i].Pos + body[i].Vel * 100, Color.Green);
         }
         Raylib.EndMode2D();
     }

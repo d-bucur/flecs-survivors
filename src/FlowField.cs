@@ -143,7 +143,7 @@ class FlowFieldECS {
 				var cellCorner = cellCenter - field.CellCenterOffset;
 
 				// Draw the grid line
-				Color gridColor = HSV.Hsv(120, 0.5f, 0.5f, 1f);
+				Color gridColor = HSV.Hsv(69, 0.7f, 0.9f, 0.7f);
 				Raylib.DrawLineV(cellCorner, cellCorner + Vector2.UnitX * field.CellSize, gridColor);
 				Raylib.DrawLineV(cellCorner, cellCorner + Vector2.UnitY * field.CellSize, gridColor);
 
@@ -155,7 +155,7 @@ class FlowFieldECS {
 				}
 				// Draw the force
 				var dir = field.Flow[field.ToKey(pos)];
-				Raylib.DrawLineV(cellCenter, cellCenter + dir * 20, HSV.Hsv(0, 0.5f, 1f, 0.8f));
+				Raylib.DrawLineV(cellCenter, cellCenter + dir * 20, HSV.Hsv(0, 0.7f, 0.9f, 0.8f));
 			}
 		Raylib.EndMode2D();
 	}
