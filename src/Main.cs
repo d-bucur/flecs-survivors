@@ -67,7 +67,6 @@ class Main : IFlecsModule {
             .Kind(Ecs.PostLoad)
             .Each(CheckDebugKeys);
         world.System<GameCtx>()
-            .TermAt(0).Singleton()
             .Kind(Ecs.PostLoad)
             .Each(InputTimeScale);
     }
@@ -187,19 +186,26 @@ class Main : IFlecsModule {
         }
     }
 
-    private void InputTimeScale(ref GameCtx ctx) {
+    private void InputTimeScale(Entity e, ref GameCtx ctx) {
+        float? target = null;
         if (Raylib.IsKeyPressed(KeyboardKey.One)) {
-            Console.WriteLine($"Timescale 1d");
-            ctx.TimeScale = 0.2f;
+            target = 0.2f;
         }
         if (Raylib.IsKeyPressed(KeyboardKey.Two)) {
-            ctx.TimeScale = 0.5f;
+            target = 0.5f;
         }
         if (Raylib.IsKeyPressed(KeyboardKey.Three)) {
-            ctx.TimeScale = 1f;
+            target = 1f;
         }
         if (Raylib.IsKeyPressed(KeyboardKey.Four)) {
-            ctx.TimeScale = 2f;
+            target = 2f;
+        }
+        if (target.HasValue) {
+            Console.WriteLine($"Spawning");
+            new Tween(e).With(
+                (ref GameCtx ctx, float ts) => ctx.TimeScale = ts,
+                ctx.TimeScale, target.Value, 1000, Ease.Linear
+            ).RegisterEcs();
         }
     }
 

@@ -22,6 +22,8 @@ Libraries:
 - https://github.com/njlr/MonoTween
 
 # Physics
+- https://research.ncl.ac.uk/game/mastersdegree/gametechnologies/physicstutorials/4collisiondetection/Physics%20-%20Collision%20Detection.pdf
+- https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection
 - https://docs.unity3d.com/6000.0/Documentation/ScriptReference/ContactPoint.html
 - https://stackoverflow.com/questions/41946007/efficient-and-well-explained-implementation-of-a-quadtree-for-2d-collision-det
 

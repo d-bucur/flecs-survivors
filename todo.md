@@ -1,6 +1,5 @@
 ## priority 1
-- add circle colliders to walls
-- add AABB colliders for walls and maybe rotated rectangles?
+- bug: walls are pushed to infinity by spawning enemies. better guarantee for static colliders, or check when spawning enemies
 - pushback should be in same direction as bullet velocity
 
 ## priority 2
@@ -13,6 +12,7 @@
 - juice: dmg indicators?, custom particles?
 - sound
 - web build
+- rotated rectangles in physics engine?
 
 ## priority 4
 - profiling

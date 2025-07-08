@@ -18,7 +18,7 @@ record struct SphereCollider(float Radius) : IColliderShape {
 record struct AABBCollider(Vector2 Size) : IColliderShape {
 	public PenetrationData? GetPenetrationVec(IColliderShape other, ref Transform myTransf, ref Transform otherTransform) {
 		return other switch {
-			SphereCollider s => Shapes.PenetrationSphereAABB(s, this, ref otherTransform, ref myTransf),
+			SphereCollider s => Shapes.PenetrationSphereAABB(s, this, ref otherTransform, ref myTransf, -1),
 			AABBCollider b => Shapes.PenetrationAABBs(this, b, ref myTransf, ref otherTransform),
 		};
 	}
@@ -31,13 +31,28 @@ record struct PenetrationData(
 );
 
 file class Shapes {
-	internal static PenetrationData? PenetrationSphereAABB(SphereCollider sphere, AABBCollider aabb, ref Transform t1, ref Transform t2) {
-		// throw new NotImplementedException();
+	internal static PenetrationData? PenetrationSphereAABB(SphereCollider s, AABBCollider b, ref Transform ts, ref Transform tb, float sign = 1f) {
+		var minPos = tb.Pos - b.Size;
+		var maxPos = tb.Pos + b.Size;
+		var closestPoint = Vector2.Clamp(ts.Pos, minPos, maxPos);
+		var distance = ts.Pos - closestPoint;
+		// TODO optimize: avoid sqrt for early exit
+		var dcLen = distance.Length();
+		if (dcLen < s.Radius) {
+			Vector2 normal = distance / dcLen * sign;
+			float penLen = s.Radius - dcLen;
+			return new PenetrationData {
+				penetration = normal * penLen,
+				Normal = normal,
+				penetrationLen = penLen,
+			};
+		}
 		return null;
 	}
 
 	internal static PenetrationData? PenetrationSpheres(SphereCollider s1, SphereCollider s2, ref Transform t1, ref Transform t2) {
 		var distance = t1.Pos - t2.Pos;
+		// TODO optimize: avoid sqrt for early exit
 		float distanceLen = distance.Length();
 		var penetration = s1.Radius + s2.Radius - distanceLen;
 		if (penetration <= 0)

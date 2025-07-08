@@ -14,7 +14,7 @@ class EnemiesModule : IFlecsModule {
 	public void InitModule(World world) {
 		world.Entity("EnemySpawner").Set(new EnemySpawner(1, 10));
 
-		world.Set(new FlowField(50, 15));
+		world.Set(new FlowField(64, 15));
 
 		world.System<FlowField, GlobalTransform>()
 			.TermAt(0).Singleton()
