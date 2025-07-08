@@ -25,8 +25,10 @@ record struct DeathEvent(Vector2 direction);
 struct DebugConfig() {
     internal bool DebugColliders = false;
     internal bool DebugFlowFields = false;
+    internal bool DebugSpatialMap = false;
     internal Entity? SystemIdColliders;
     internal Entity? SystemIdFlow;
+    internal Entity? SystemIdSpatial;
 }
 
 class Main : IFlecsModule {
@@ -175,6 +177,13 @@ class Main : IFlecsModule {
                 conf.SystemIdFlow!.Value.Enable();
             else
                 conf.SystemIdFlow!.Value.Disable();
+        }
+        if (Raylib.IsKeyPressed(KeyboardKey.O)) {
+            conf.DebugSpatialMap = !conf.DebugSpatialMap;
+            if (conf.DebugSpatialMap)
+                conf.SystemIdSpatial!.Value.Enable();
+            else
+                conf.SystemIdSpatial!.Value.Disable();
         }
     }
 

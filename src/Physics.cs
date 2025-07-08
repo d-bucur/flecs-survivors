@@ -91,7 +91,7 @@ public enum CollisionFlags {
 class PhysicsModule : IFlecsModule {
     #region Init
     public void InitModule(World world) {
-        world.Set(new SpatialMap(30));
+        world.Set(new SpatialMap(64));
         world.Set(new SpatialQuery());
 
         // TODO update to GlobalTransform
@@ -139,12 +139,20 @@ class PhysicsModule : IFlecsModule {
             .MultiThreaded()
             .Each(UpdateHeading);
 
-        var debugId = world.System<GlobalTransform, PhysicsBody, Collider>("Debug colliders and physics")
+        var debugCollidersId = world.System<GlobalTransform, PhysicsBody, Collider>("Debug colliders and physics")
             .Kind<RenderPhase>()
             .Iter(DebugColliders);
+        var debugSpatialId = world.System<SpatialMap>("Debug spatial hash map")
+            .Kind<RenderPhase>()
+            .Each(DebugSpatialMap);
         world.System<DebugConfig>()
             .Kind(Ecs.OnStart)
-            .Each((ref DebugConfig conf) => { conf.SystemIdColliders = debugId; debugId.Disable(); });
+            .Each((ref DebugConfig conf) => {
+                conf.SystemIdColliders = debugCollidersId;
+                debugCollidersId.Disable();
+                conf.SystemIdSpatial = debugSpatialId;
+                debugSpatialId.Disable();
+            });
     }
     #endregion
     #region Systems
@@ -239,7 +247,7 @@ class PhysicsModule : IFlecsModule {
                             var penData = c1.ColliderShape.GetPenetrationVec(c2.ColliderShape, ref t1, ref t2);
                             if (penData is null)
                                 continue;
-                            var (penetrationVec, distance, penetration) = penData.Value;
+                            var (penetrationVec, normal, penetration) = penData.Value;
 
                             // Register collision
                             // TODO contact point not precise, should consider displacement below
@@ -254,13 +262,12 @@ class PhysicsModule : IFlecsModule {
                             if (e1.Has<Trigger>() || e2.Has<Trigger>())
                                 continue;
 
-                            distance = Vector2.Normalize(distance);
                             ref var b2 = ref e2.GetMut<PhysicsBody>();
                             // TODO if both 0 then div0
                             var totalBounce = b2.BounceCoeff + b1.BounceCoeff;
                             float b1Displacement = b1.BounceCoeff / totalBounce * penetration;
-                            t1.Pos += distance * b1Displacement;
-                            t2.Pos -= distance * (penetration - b1Displacement);
+                            t1.Pos += normal * b1Displacement;
+                            t2.Pos -= normal * (penetration - b1Displacement);
                         }
                         if (areCellsDifferent)
                             Monitor.Exit(nearCell);
@@ -292,9 +299,24 @@ class PhysicsModule : IFlecsModule {
                 case SphereCollider s:
                     Raylib.DrawCircleV(transform[i].Pos, s.Radius, color);
                     break;
+                case AABBCollider b:
+                    Raylib.DrawRectangleV(transform[i].Pos - b.Size, b.Size * 2, color);
+                    break;
             }
 
             Raylib.DrawLineV(transform[i].Pos, transform[i].Pos + body[i].Vel * 100, Color.Green);
+        }
+        Raylib.EndMode2D();
+    }
+
+    private void DebugSpatialMap(ref SpatialMap map) {
+        var camera = Render.cameraQuery.First().Get<Camera>();
+        Raylib.BeginMode2D(camera.Value);
+        // World origin
+        Raylib.DrawLine(-600, 0, 600, 0, Color.Purple);
+        Raylib.DrawLine(0, -600, 0, 600, Color.Purple);
+        foreach (var k in map.Map.Keys) {
+            Raylib.DrawRectangleLinesEx(new Rectangle(k.X * map.CellSize, k.Y * map.CellSize, map.CellSize, map.CellSize), 1, Color.Purple);
         }
         Raylib.EndMode2D();
     }

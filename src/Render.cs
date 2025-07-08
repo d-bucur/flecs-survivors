@@ -245,44 +245,44 @@ public struct Render : IFlecsModule {
     }
 
     private static void RenderTiledMap(Entity e, ref Tiled.TiledMap map) {
-		var camera = cameraQuery.First().Get<Camera>();
-		var ctx = e.CsWorld().Get<RenderCtx>();
-		var cutoffDistance = GetCutoffDistance(camera);
-		Raylib.BeginMode2D(camera.Value);
-		Raylib.BeginShaderMode(ctx.SpriteShader);
+        var camera = cameraQuery.First().Get<Camera>();
+        var ctx = e.CsWorld().Get<RenderCtx>();
+        var cutoffDistance = GetCutoffDistance(camera);
+        Raylib.BeginMode2D(camera.Value);
+        Raylib.BeginShaderMode(ctx.SpriteShader);
 
-		foreach (var layer in map.Layers) {
-			if (!layer.Visible) continue;
-			for (int i = 0; i < layer.Tiles.Length; i++) {
-				int tile = layer.Tiles[i];
-				if (tile == 0) continue;
+        foreach (var layer in map.Layers) {
+            if (!layer.Visible) continue;
+            for (int i = 0; i < layer.Tiles.Length; i++) {
+                int tile = layer.Tiles[i];
+                if (tile == 0) continue;
 
-				var y = Math.DivRem(i, layer.Width, out var x);
-				var pos = new Vector2(x * map.TileWidth, y * map.TileHeight);
-				// skip if too far away from camera
-				if ((pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
+                var y = Math.DivRem(i, layer.Width, out var x);
+                var pos = new Vector2(x * map.TileWidth, y * map.TileHeight);
+                // skip if too far away from camera
+                if ((pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
 
-				var (texture, source) = map.GetCellData(tile);
-				var dest = new Rectangle(pos, map.TileWidth, map.TileHeight);
-				Raylib.DrawTexturePro(
-					texture,
-					source,
-					dest,
-					Vector2.Zero,
-					0,
-					Color.White
-				);
-			}
-		}
-		Raylib.EndShaderMode();
-		Raylib.EndMode2D();
-	}
+                var (texture, source) = map.GetTileData(tile);
+                var dest = new Rectangle(pos, map.TileWidth, map.TileHeight);
+                Raylib.DrawTexturePro(
+                    texture,
+                    source,
+                    dest,
+                    Vector2.Zero,
+                    0,
+                    Color.White
+                );
+            }
+        }
+        Raylib.EndShaderMode();
+        Raylib.EndMode2D();
+    }
 
-	private static float GetCutoffDistance(Camera camera) {
-		return (camera.ScreenWidth * camera.ScreenWidth + camera.ScreenHeight * camera.ScreenHeight) * 0.6f;
-	}
+    private static float GetCutoffDistance(Camera camera) {
+        return (camera.ScreenWidth * camera.ScreenWidth + camera.ScreenHeight * camera.ScreenHeight) * 0.6f;
+    }
 
-	private void DrawUI(Iter it) {
+    private void DrawUI(Iter it) {
         // var camera = cameraQuery.First().Get<Camera>();
         var ctx = it.World().Get<RenderCtx>();
         Raylib.DrawFPS(10, ctx.WinSize.Y - 30);

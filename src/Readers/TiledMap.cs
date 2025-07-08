@@ -22,6 +22,7 @@ namespace Tiled {
 		internal required int Height;
 		internal required int[] Tiles;
 		internal required bool Visible;
+		internal required bool Colliders;
 	};
 
 	struct TiledMap {
@@ -32,7 +33,7 @@ namespace Tiled {
 		internal required Tileset[] Tilesets;
 		internal required Layer[] Layers;
 
-		public (Texture2D texture, Rectangle source) GetCellData(int tile) {
+		public (Texture2D texture, Rectangle source) GetTileData(int tile) {
 			int tilesetIdx = -1;
 			int testIdx = 0;
 			do {
@@ -94,6 +95,7 @@ class TiledMapLoader {
 					Height = l.Height,
 					Tiles = l.Data,
 					Visible = l.Visible,
+					Colliders = l.Properties is not null && l.Properties.Any((p) => p.Name == "colliders" && p.Value.GetBoolean())
 				}).ToArray(),
 			Tilesets = tilesets
 		};
@@ -124,6 +126,13 @@ namespace TiledIntermediate {
 		int Width,
 		int Height,
 		bool Visible,
-		int[] Data
+		int[] Data,
+		Property[]? Properties
+	);
+
+	record struct Property(
+		string Name,
+		string Type,
+		JsonElement Value
 	);
 }
