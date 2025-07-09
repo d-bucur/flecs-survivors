@@ -289,7 +289,7 @@ class PhysicsModule : IFlecsModule {
     }
 
     private void DebugColliders(Iter it, Field<GlobalTransform> transform, Field<PhysicsBody> body, Field<Collider> collider) {
-        var camera = Render.cameraQuery.First().Get<Camera>();
+        var camera = CachedQueries.camera.First().Get<Camera>();
         Raylib.BeginMode2D(camera.Value);
         foreach (int i in it) {
             var hue = 0f;
@@ -310,7 +310,7 @@ class PhysicsModule : IFlecsModule {
     }
 
     private void DebugSpatialMap(ref SpatialMap map) {
-        var camera = Render.cameraQuery.First().Get<Camera>();
+        var camera = CachedQueries.camera.First().Get<Camera>();
         Raylib.BeginMode2D(camera.Value);
         // World origin
         Raylib.DrawLine(-600, 0, 600, 0, Color.Purple);

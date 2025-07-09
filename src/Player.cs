@@ -28,9 +28,10 @@ class PlayerModule : IFlecsModule {
             .Kind(Ecs.PostLoad)
             .Each(PlayerMouseInput); ;
 
-        world.Observer<PowerCollector, Shooter>()
-            .Event(Ecs.OnSet)
-            .Each(UpdateWeaponLevels);
+        // TODO handle powerups
+        // world.Observer<PowerCollector, Shooter>()
+        //     .Event(Ecs.OnSet)
+        //     .Each(UpdateWeaponLevels);
     }
 
     private void InitPlayer(ref World world) {
@@ -63,7 +64,8 @@ class PlayerModule : IFlecsModule {
     }
 
     static void UpdateWeaponLevels(ref PowerCollector collector, ref Shooter shooter) {
-        var level = 1 + (uint)collector.Accumulated / 5;
+        // TODO update levelling logic
+        var level = 1 + (uint)collector.AccumulatedCurrent / 5;
         foreach (var weapon in shooter.Weapons) {
             if (weapon.Level == level) continue;
             weapon.Level = level;
@@ -73,11 +75,25 @@ class PlayerModule : IFlecsModule {
 
     static void HandlePowerCollected(Entity e, ref OnCollisionEnter collision) {
         if (!collision.Other.Has<Powerup>() || !e.Has<PowerCollector>()) return;
-        ref PowerCollector collector = ref e.GetMut<PowerCollector>();
-        collector.Accumulated += collision.Other.Get<Powerup>().Value;
-        e.Modified<PowerCollector>();
-        collision.Other.Destruct();
-        // Console.WriteLine($"Power: {collector.Accumulated}");
+        bool shouldDestructOther = false;
+        collision.Other.Read((ref readonly Powerup powerup) => {
+            var powerupValue = powerup.Value;
+            e.Write((ref PowerCollector collector) => {
+                // Increment XP and level up
+                collector.AccumulatedCurrent += powerupValue;
+                collector.AccumulatedTotal += powerupValue;
+                long diff = (long)collector.AccumulatedCurrent - (long)collector.XpToNextLevel;
+                if (diff >= 0) {
+                    Console.WriteLine($"Level Up!");
+                    collector.AccumulatedCurrent = (ulong)diff;
+                    collector.LevelCurrent += 1;
+                    collector.XpToNextLevel *= (ulong)collector.Exp;
+                }
+                shouldDestructOther = true;
+            });
+        });
+        if (shouldDestructOther)
+            collision.Other.Destruct();
     }
 
     static void PlayerKeyInput(Entity e, ref PhysicsBody b, ref Shooter shooter) {
@@ -99,7 +115,7 @@ class PlayerModule : IFlecsModule {
         if (Raylib.IsMouseButtonPressed(MouseButton.Left)) mouseMovementEnabled = !mouseMovementEnabled;
         if (!mouseMovementEnabled) return;
 
-        var camera = Render.cameraQuery.First().Get<Camera>();
+        var camera = CachedQueries.camera.First().Get<Camera>();
         var screenPos = Raylib.GetMousePosition();
         var mousePosWorld = Raylib.GetScreenToWorld2D(screenPos, camera.Value);
 

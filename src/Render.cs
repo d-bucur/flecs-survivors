@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text;
 using Flecs.NET.Core;
 using Raylib_cs;
 
@@ -109,14 +110,8 @@ readonly struct Textures {
 #endregion
 
 public struct Render : IFlecsModule {
-    internal static Query<Camera> cameraQuery;
-    private Query<Health> playerHealthQuery;
-
     #region Init
     public unsafe void InitModule(World world) {
-        cameraQuery = world.Query<Camera>();
-        playerHealthQuery = world.QueryBuilder<Health>().With<Player>().Build();
-
         world.Set(new ContentManager());
 
         world.System()
@@ -154,7 +149,7 @@ public struct Render : IFlecsModule {
             .Run(RenderSprites);
 
         world.System()
-            .Kind<RenderPhase>()
+            .Kind<PostRenderPhase>()
             .Run(DrawUI);
     }
     #endregion
@@ -208,7 +203,7 @@ public struct Render : IFlecsModule {
     }
 
     void RenderSprites(Iter it) {
-        var camera = cameraQuery.First().Get<Camera>();
+        var camera = CachedQueries.camera.First().Get<Camera>();
         var ctx = it.World().Get<RenderCtx>();
         var cutoffDistance = GetCutoffDistance(camera);
         Raylib.BeginMode2D(camera.Value);
@@ -245,7 +240,7 @@ public struct Render : IFlecsModule {
     }
 
     private static void RenderTiledMap(Entity e, ref Tiled.TiledMap map) {
-        var camera = cameraQuery.First().Get<Camera>();
+        var camera = CachedQueries.camera.First().Get<Camera>();
         var ctx = e.CsWorld().Get<RenderCtx>();
         var cutoffDistance = GetCutoffDistance(camera);
         Raylib.BeginMode2D(camera.Value);
@@ -283,16 +278,47 @@ public struct Render : IFlecsModule {
     }
 
     private void DrawUI(Iter it) {
-        // var camera = cameraQuery.First().Get<Camera>();
         var ctx = it.World().Get<RenderCtx>();
-        Raylib.DrawFPS(10, ctx.WinSize.Y - 30);
-        playerHealthQuery.Each((ref Health h) => {
-            string healthText = $"Health: {h.Value}/{h.MaxValue}";
-            DrawText(healthText, 10, 10, 20);
+
+        const int margin = 10;
+        float width = ctx.WinSize.X - margin * 2;
+
+        CachedQueries.playerHealth.Each((ref Health h) => {
+            string healthText = $"{h.Value}/{h.MaxValue}";
+            var perc = (float)h.Value / h.MaxValue;
+            DrawBar(perc, margin, width, 1, Color.Red, healthText);
         });
-        // TODO
-        DrawText("Powerup:", 10, 40, 20);
-        DrawText($"Entities: {it.World().Count(Ecs.Any)}", 10, 70, 20);
+        CachedQueries.playerPower.Each((ref PowerCollector power) => {
+            DrawBar((float)power.AccumulatedCurrent / power.XpToNextLevel, margin, width, 0, Color.Purple, $"{power.AccumulatedCurrent}/{power.XpToNextLevel} Lvl {power.LevelCurrent}");
+        });
+
+        DrawText($"Entities: {it.World().Count(Ecs.Any)}", ctx.WinSize.X - 200, ctx.WinSize.Y - 30, 20);
+        Raylib.DrawFPS(10, ctx.WinSize.Y - 30);
+
+        var sb = new StringBuilder();
+        var conf = it.World().Get<DebugConfig>();
+        if (conf.DebugColliders)
+            sb.Append(" Colliders");
+        if (conf.DebugFlowFields)
+            sb.Append(" Flow fields");
+        if (conf.DebugSpatialMap)
+            sb.Append(" Spatial map");
+        if (sb.Length > 0) {
+            DrawText($"Debug:{sb}", 200, ctx.WinSize.Y - 30, 18);
+        }
+    }
+
+    private static void DrawBar(float perc, int margin, float width, int pos, Color color, string text, float height = 25f) {
+        const int lineThick = 3;
+        float y = margin + pos * height + pos * 5;
+
+        Rectangle rect = new Rectangle(margin, y, width, height);
+        Raylib.DrawRectangleRec(rect, Raylib.Fade(Color.DarkGray, 0.7f));
+        Raylib.DrawRectangleRec(new Rectangle(margin, y, width * perc, height), Raylib.Fade(color, 0.7f));
+        Raylib.DrawRectangleLinesEx(rect, lineThick, Raylib.Fade(Color.Black, 0.3f));
+
+        const int fontSize = 18;
+        DrawText(text, (int)width / 2, (int)(y + (height - fontSize) / 2f), fontSize);
     }
 
     private static void DrawText(string text, int x, int y, int fontSize) {

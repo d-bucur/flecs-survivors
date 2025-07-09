@@ -1,8 +1,6 @@
 using System;
 using System.Numerics;
-using System.Text.RegularExpressions;
 using Flecs.NET.Core;
-using Raylib_cs;
 
 namespace flecs_test;
 
@@ -69,7 +67,7 @@ class EnemiesModule : IFlecsModule {
 			.Immediate()
 			.Iter(SpawnEnemies);
 
-		world.Observer<GlobalTransform>()
+		world.Observer<GlobalTransform, Level>()
 			.With<Enemy>()
 			.Event(Ecs.OnRemove)
 			.Each(PowerupOnDeath);
@@ -104,6 +102,7 @@ class EnemiesModule : IFlecsModule {
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new Collider(new SphereCollider(17), CollisionFlags.ENEMY, CollisionFlags.ALL & ~CollisionFlags.POWERUP))
 			.Set(new Health((int)level))
+			.Set(new Level(level))
 			.Observe<OnCollisionEnter>(HandleEnemyCollision)
 			.Observe<DeathEvent>(HandleEnemyDeath);
 		var sprite = world.Entity("Sprite")
@@ -193,16 +192,16 @@ class EnemiesModule : IFlecsModule {
 	}
 	#endregion
 
-	static void PowerupOnDeath(Iter it, int i, ref GlobalTransform t) {
+	static void PowerupOnDeath(Entity e, ref GlobalTransform t, ref Level level) {
 		// Spawn power pickup
-		Entity power = it.World().Entity()
+		Entity power = e.CsWorld().Entity()
 			.Add<Trigger>()
-			.Set(new Powerup(1))
+			.Set(new Powerup(level.Value))
 			.Set(new Transform(t.Pos, Vector2.One, 0))
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new DespawnTimed(30000f))
 			.Set(new Collider(new SphereCollider(15), CollisionFlags.POWERUP, CollisionFlags.PLAYER));
-		it.World().Entity()
+		e.CsWorld().Entity()
 			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
 			.Set(new Sprite("Content/sprites/slime.png"))
 			.ChildOf(power);

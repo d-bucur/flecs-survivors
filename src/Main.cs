@@ -13,7 +13,13 @@ record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
 record struct FollowTarget(Entity Target, float FollowSpeed = 0.25f, float FollowAnticipation = 0);
 
 record struct Powerup(ulong Value = 1);
-record struct PowerCollector(float Range, ulong Accumulated = 0);
+record struct PowerCollector(float Range, float Exp = 2f) {
+    public ulong AccumulatedCurrent = 0;
+    public ulong AccumulatedTotal = 0;
+    public ulong XpToNextLevel = 5;
+    public ulong LevelCurrent = 1;
+}
+public record struct Level(uint Value = 1);
 
 record struct Health(int MaxValue = 1, float OnLossInvulnTime = 300) {
     public int Value = MaxValue;
@@ -33,7 +39,7 @@ struct DebugConfig() {
 
 class Main : IFlecsModule {
     public void InitModule(World world) {
-        Level.InitLevel(ref world);
+        LevelLoader.InitLevel(ref world);
         world.Set(new DebugConfig());
 
         world.System<DespawnTimed>()
@@ -208,7 +214,7 @@ class Main : IFlecsModule {
     }
 
     internal static void CameraShake(float intensity) {
-        var cam = Render.cameraQuery.First();
+        var cam = CachedQueries.camera.First();
         cam.Read((ref readonly Camera c) => {
             var startOffset = c.Value.Offset;
             new Tween(cam).With(

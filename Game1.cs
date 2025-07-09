@@ -47,6 +47,8 @@ public class Game {
         Raylib.SetTextureFilter(frameBuffer.Texture, TextureFilter.Bilinear);
     }
 
+    private enum RenderPhaseTop; // Not a great name. Equivalent of Ecs.Phase for rendering
+
     internal void InitEcs(Vec2I winSize) {
         _world = World.Create();
 
@@ -56,10 +58,15 @@ public class Game {
         _world.Entity<PostPhysics>().Add(Ecs.Phase).DependsOn<OnPhysics>();
         _world.Entity(Ecs.OnUpdate).DependsOn<PostPhysics>();
 
-        _world.Entity<PostRenderPhase>().Add(Ecs.Phase).DependsOn<RenderPhase>();
+        // separate pipeline for rendering
+        _world.Entity<RenderPhase>().Add<RenderPhaseTop>();
+        _world.Entity<PostRenderPhase>().Add<RenderPhaseTop>().DependsOn<RenderPhase>();
+        // query from https://www.flecs.dev/flecs/md_docs_2Systems.html#builtin-pipeline-query
         _renderPipeline = _world.Pipeline()
             .With(Ecs.System)
-            .With<RenderPhase>()
+            .With<RenderPhaseTop>().Cascade(Ecs.DependsOn)
+            .Without(Ecs.Disabled).Up(Ecs.DependsOn)
+            .Without(Ecs.Disabled).Up(Ecs.ChildOf)
             .Build();
 
         // custom shader that support damage white flash
@@ -67,9 +74,11 @@ public class Game {
         _world.Set(new RenderCtx(winSize, spriteShader));
         gameCtx = new();
         _world.Set(gameCtx);
+
         // _world.SetThreads(Environment.ProcessorCount);
         // _world.SetTaskThreads(Environment.ProcessorCount);
 
+        _world.Import<CachedQueries>();
         _world.Import<Render>();
         _world.Import<PhysicsModule>();
         _world.Import<TransformsModule>();
@@ -81,8 +90,8 @@ public class Game {
     }
 
     internal void Update() {
-		float deltaTime = Raylib.GetFrameTime() * 1000 * gameCtx.TimeScale;
-		_world.Progress(deltaTime);
+        float deltaTime = Raylib.GetFrameTime() * 1000 * gameCtx.TimeScale;
+        _world.Progress(deltaTime);
     }
 
     internal void Draw() {

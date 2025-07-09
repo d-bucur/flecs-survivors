@@ -1,10 +1,10 @@
 ## priority 1
-- more weapon types
+- level up
 - roguelite powerups
+- menus & scenes (states and sub states)
 
 ## priority 2
-- ui
-- menus & scenes (states and sub states)
+- more weapon types (aoe, split bullets etc)
 
 ## priority 3
 - juice: dmg indicators?, custom particles?
@@ -12,16 +12,21 @@
 - web build
 
 ## priority 4
+- add sprite offset to sheet?
 - profiling
 - better GlobalTransform using change detection on Transform https://www.flecs.dev/flecs/md_docs_2Queries.html#change-detection
-- add sprite offset to sheet?
 - refactor: don't expose structs as fields: https://docs.flatredball.com/flatredball/contributing/general-programming-flatredball-programming-style-guide#structs-as-fields
 - cache queries: https://www.flecs.dev/flecs/md_docs_2Queries.html#performance-and-caching
 - rotated rectangles in physics engine?
 
+## optional
+- split screen multiplayer
+- networking with rollback??
+
 ## bugs
 - bug sprite sorting not working correctly for large sprites. should add origin to sprite and consider it when sorting. Also tilemap sorting would be nice
 - flow field LoS and jankiness (enemies don't go directly towards player)
-- bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why
-- bug: wonky displacement ever since added multithreading
+- bug: window resizing and mouse movement not working properly
+- bug: wonky displacement ever since added multithreading. issue with hash sizes?
 - bug: spread rotation is not centered
+- bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why. Very rare

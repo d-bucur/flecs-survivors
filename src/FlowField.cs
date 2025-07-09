@@ -134,7 +134,7 @@ class FlowFieldECS {
 	}
 
 	internal static void DebugFlowField(Entity e, ref FlowField field) {
-		var camera = Render.cameraQuery.First().Get<Camera>();
+		var camera = CachedQueries.camera.First().Get<Camera>();
 		Raylib.BeginMode2D(camera.Value);
 
 		for (var i = -field.SideWidth; i <= field.SideWidth; i++)
