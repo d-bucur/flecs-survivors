@@ -25,7 +25,7 @@ record struct AABBCollider(Vector2 Size) : IColliderShape {
 }
 
 record struct PenetrationData(
-	Vector2 penetration,
+	Vector2 penetration, // TODO not needed?
 	Vector2 Normal,
 	float penetrationLen
 );
@@ -37,10 +37,18 @@ file class Shapes {
 		var closestPoint = Vector2.Clamp(ts.Pos, minPos, maxPos);
 		var distance = ts.Pos - closestPoint;
 		// TODO optimize: avoid sqrt for early exit
-		var dcLen = distance.Length();
-		if (dcLen < s.Radius) {
-			Vector2 normal = distance / dcLen * sign;
-			float penLen = s.Radius - dcLen;
+		var distanceLen = distance.Length();
+		if (distanceLen == 0) {
+			distance = ts.Pos - tb.Pos;
+			distanceLen = distance.Length();
+		}
+		if (distanceLen == 0) {
+			// TODO could still be div0 here if very unlucky
+			Console.WriteLine($"div0 Sphere-AABB");
+		}
+		if (distanceLen < s.Radius) {
+			Vector2 normal = distance / distanceLen * sign;
+			float penLen = s.Radius - distanceLen;
 			return new PenetrationData {
 				penetration = normal * penLen,
 				Normal = normal,
@@ -54,6 +62,9 @@ file class Shapes {
 		var distance = t1.Pos - t2.Pos;
 		// TODO optimize: avoid sqrt for early exit
 		float distanceLen = distance.Length();
+		if (distanceLen == 0) {
+			Console.WriteLine($"div0 Spheres");
+		}
 		var penetration = s1.Radius + s2.Radius - distanceLen;
 		if (penetration <= 0)
 			return null;
