@@ -155,7 +155,7 @@ class FlowFieldECS {
 				}
 				// Draw the force
 				var dir = field.Flow[field.ToKey(pos)];
-				Raylib.DrawLineV(cellCenter, cellCenter + dir * 20, HSV.Hsv(0, 0.7f, 0.9f, 0.8f));
+				Raylib.DrawLineEx(cellCenter, cellCenter + dir * 20, 2f, HSV.Hsv(0, 0.5f, 0.5f, 0.8f));
 			}
 		Raylib.EndMode2D();
 	}

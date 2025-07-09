@@ -10,7 +10,7 @@ record struct Shooter(List<IBulletPattern> Weapons, float Time = 0) {
 	public Vector2? Target;
 	public bool Enabled = true;
 }
-record struct Bullet;
+record struct Bullet(float Pushback = 0f);
 
 class ShootingModule : IFlecsModule {
 	public void InitModule(World world) {
@@ -50,18 +50,18 @@ class ShootingModule : IFlecsModule {
 		shooter.Time += it.DeltaTime();
 		foreach (var weapon in shooter.Weapons) {
 			var playerDir = heading.Value == Vector2.Zero ? Vector2.UnitX : Vector2.Normalize(heading.Value);
-			foreach (var bullet in weapon.Tick(shooter.Time, playerDir, shooter.Target)) {
-				SpawnBullet(it.World(), transform.Pos + bullet.Pos, bullet.Vel);
+			foreach (var bulletData in weapon.Tick(shooter.Time, playerDir, shooter.Target)) {
+				SpawnBullet(it.World(), transform.Pos + bulletData.Pos, bulletData);
 			}
 		}
 	}
 
-	static void SpawnBullet(World world, Vector2 pos, Vector2 dir) {
+	static void SpawnBullet(World world, Vector2 pos, BulletData bulletData) {
 		Entity bullet = world.Entity()
-			.Add<Bullet>()
 			.Add<Trigger>()
+			.Set(new Bullet(bulletData.Pushback))
 			.Set(new Transform(pos, Vector2.One, 0))
-			.Set(new PhysicsBody(dir, Vector2.Zero, DragCoeff: 1))
+			.Set(new PhysicsBody(bulletData.Vel, Vector2.Zero, DragCoeff: 1))
 			.Set(new DespawnTimed(5000f))
 			.Set(new Collider(new SphereCollider(17), CollisionFlags.BULLET, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.BULLET))
 			.Set(new Health(2))
@@ -69,8 +69,8 @@ class ShootingModule : IFlecsModule {
 			.Observe<DeathEvent>(HandleBulletDeath);
 		var sprite = world.Entity()
 			.Set(new Transform(new Vector2(0, 0), new Vector2(2, 2), 0))
-			.Set(new Sprite(Textures.MEGA_SHEET, OriginAlign.CENTER, new Color(146, 252, 245)))
-			.Set(new Animator("bullets", "bullet1", 75))
+			.Set(new Sprite(Textures.MEGA_SHEET, OriginAlign.CENTER, bulletData.Color))
+			.Set(new Animator("bullets", bulletData.SpriteName, 75))
 			.ChildOf(bullet);
 		// RotationTween(sprite).RegisterEcs();
 	}

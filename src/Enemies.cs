@@ -209,15 +209,15 @@ class EnemiesModule : IFlecsModule {
 	}
 
 	static void HandleEnemyCollision(Entity enemy, ref OnCollisionEnter collision) {
-		const float PUSHBACK = 0.5f;
 		if (collision.Other.Has<Player>()) {
 			HandleCollisionWithPlayer(enemy, ref collision);
 			return;
 		}
 		if (!collision.Other.Has<Bullet>()) return;
+		var bullet = collision.Other.Get<Bullet>();
 
 		ref var body = ref enemy.GetMut<PhysicsBody>();
-		body.Vel = collision.Data.Penetration.Normalized() * PUSHBACK;
+		body.Vel = collision.Data.Penetration.Normalized() * bullet.Pushback;
 
 		if (Main.DecreaseHealth(enemy, collision.Data.Penetration))
 			Main.FlashDamage(enemy);

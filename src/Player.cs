@@ -43,7 +43,13 @@ class PlayerModule : IFlecsModule {
             .Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0.2f, 0.85f))
             .Set(new Collider(new SphereCollider(17), CollisionFlags.PLAYER, CollisionFlags.ALL & ~CollisionFlags.BULLET))
             .Set(new Heading())
-            .Set(new Shooter(new List<IBulletPattern>([Weapons.PresetWeak])))
+            .Set(new Shooter(new List<IBulletPattern>([
+                // Weapons.PresetWeak,
+                Weapons.PresetClosestSMG,
+                Weapons.PresetShotgun,
+                Weapons.PresetSpiral,
+                Weapons.PresetSpread,
+            ])))
             .Set(new PowerCollector(200))
             .Set(new Health(10, 500))
             .Observe<OnCollisionEnter>(HandlePowerCollected)

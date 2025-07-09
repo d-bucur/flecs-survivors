@@ -146,19 +146,17 @@ class Main : IFlecsModule {
 
     public static void FlashDamage(Entity entity) {
         entity.Children((e) => {
-            e.Read(((ref readonly Sprite sprite) => {
-                var startColor = sprite.Tint;
+            e.Read((ref readonly Sprite sprite) => {
                 new Tween(e).With(
                     (ref Sprite s, Color t) => s.Tint = t,
                     HSV.Hsv(0, 0, 0, 0),
                     HSV.Hsv(0, 0, 0, 1),
-                    300,
+                    150,
                     Ease.QuartOut,
                     Raylib.ColorLerp,
-                    OnEnd: (ref Sprite s) => s.Tint = startColor,
                     AutoReverse: true
                 ).RegisterEcs();
-            }));
+            });
         });
     }
 
