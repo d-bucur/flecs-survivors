@@ -56,12 +56,12 @@ class EnemiesModule : IFlecsModule {
 			.Iter(UpdateEnemyAccel);
 
 		world.System<EnemySpawner>()
-			.TickSource(world.Timer().Rate(50, Timers.intervalTimer))
+			.TickSource(world.Timer().Rate(100, Timers.intervalTimer))
 			.Kind(Ecs.PreUpdate)
 			.Each(IncrementLevel);
 
 		world.System<EnemySpawner>()
-			.TickSource(world.Timer().Rate(3, Timers.intervalTimer))
+			.TickSource(world.Timer().Rate(5, Timers.intervalTimer))
 			.Kind(Ecs.PreUpdate)
 			// .Kind(Ecs.Disabled)
 			.Immediate()
@@ -71,7 +71,6 @@ class EnemiesModule : IFlecsModule {
 			.With<Enemy>()
 			.Event(Ecs.OnRemove)
 			.Each(PowerupOnDeath);
-
 	}
 	#endregion init
 

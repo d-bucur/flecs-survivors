@@ -13,6 +13,7 @@ struct GameState {
 	// Weak param typing for newState
 	public static void ChangeState(Entity newState) {
 		CurrentState.Disable();
+		newState.Enable();
 		CurrentState = newState;
 		if (newState == LevelUp) {
 			Timers.runningTimer.Stop();

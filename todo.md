@@ -1,6 +1,5 @@
 ## priority 1
-- level up
-- roguelite powerups
+- more flexible power up system
 - menus & scenes (states and sub states)
 
 ## priority 2
@@ -36,3 +35,4 @@
 - bug: spread rotation is not centered
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why. Very rare
 - bug: if stopping the main timer or disabling integration, getting a lot of div0s (distances). overlapping entities that are triggering collisions?
+- bug: sometimes entities disappear. Maybe same as div0 errors above. Happening more often since added level up screen

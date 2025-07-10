@@ -294,7 +294,7 @@ public struct Render : IFlecsModule {
             DrawBar((float)power.AccumulatedCurrent / power.XpToNextLevel, margin, width, 0, Color.Purple, $"{power.AccumulatedCurrent}/{power.XpToNextLevel} Lvl {power.LevelCurrent}");
         });
 
-        DrawText($"Entities: {it.World().Count(Ecs.Any)}", ctx.WinSize.X - 200, ctx.WinSize.Y - 30, 20);
+        DrawTextShadowed($"Entities: {it.World().Count(Ecs.Any)}", ctx.WinSize.X - 200, ctx.WinSize.Y - 30, 20);
         Raylib.DrawFPS(10, ctx.WinSize.Y - 30);
 
         var sb = new StringBuilder();
@@ -306,7 +306,7 @@ public struct Render : IFlecsModule {
         if (conf.DebugSpatialMap)
             sb.Append(" Spatial map");
         if (sb.Length > 0) {
-            DrawText($"Debug:{sb}", 200, ctx.WinSize.Y - 30, 18);
+            DrawTextShadowed($"Debug:{sb}", 200, ctx.WinSize.Y - 30, 18);
         }
     }
 
@@ -320,10 +320,10 @@ public struct Render : IFlecsModule {
         Raylib.DrawRectangleLinesEx(rect, lineThick, Raylib.Fade(Color.Black, 0.3f));
 
         const int fontSize = 18;
-        DrawText(text, (int)width / 2, (int)(y + (height - fontSize) / 2f), fontSize);
+        DrawTextShadowed(text, (int)width / 2, (int)(y + (height - fontSize) / 2f), fontSize);
     }
 
-    private static void DrawText(string text, int x, int y, int fontSize) {
+    public static void DrawTextShadowed(string text, int x, int y, int fontSize = 18) {
         Raylib.DrawText(text, x + 2, y + 2, fontSize, Color.Black);
         Raylib.DrawText(text, x, y, fontSize, Color.White);
     }

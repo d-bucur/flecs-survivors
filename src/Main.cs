@@ -48,7 +48,9 @@ class Main : IFlecsModule {
         world.System<Tween>()
             .Kind(Ecs.OnUpdate)
             .Immediate()
-            .TickSource(Timers.runningTimer)
+            // Ideally we would have tweens on different timers, but here it uses the default one
+            // So tweens shouldn't do gameplay stuff, otherwise they would not be pausable in menus
+            // .TickSource(Timers.menuTimer)
             .Each(ProgressTweens);
 
         world.System<FollowTarget, Transform>()

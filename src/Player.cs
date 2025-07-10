@@ -21,12 +21,14 @@ class PlayerModule : IFlecsModule {
         world.System<PhysicsBody, Shooter>()
             .With<Player>()
             .Kind(Ecs.PostLoad)
-            .Each(PlayerKeyInput);
+            .Each(PlayerKeyInput)
+            .Entity.DependsOn(GameState.Running);
 
         world.System<PhysicsBody, GlobalTransform>()
             .With<Player>()
             .Kind(Ecs.PostLoad)
-            .Each(PlayerMouseInput);
+            .Each(PlayerMouseInput)
+            .Entity.DependsOn(GameState.Running);
     }
 
     private void InitPlayer(ref World world) {
@@ -40,13 +42,13 @@ class PlayerModule : IFlecsModule {
             .Set(new Collider(new SphereCollider(17), CollisionFlags.PLAYER, CollisionFlags.ALL & ~CollisionFlags.BULLET))
             .Set(new Heading())
             .Set(new Shooter(new List<IBulletPattern>([
-                // Weapons.PresetWeak,
                 Weapons.PresetClosestSMG,
-                Weapons.PresetShotgun,
-                Weapons.PresetSpiral,
-                Weapons.PresetSpread,
+                // Weapons.PresetWeak,
+                // Weapons.PresetShotgun,
+                // Weapons.PresetSpiral,
+                // Weapons.PresetSpread,
             ])))
-            .Set(new PowerCollector(200))
+            .Set(new PowerCollector(250))
             .Set(new Health(10, 500))
             .Observe<OnCollisionEnter>(PowerupModule.HandlePowerCollected)
             .Observe<OnCollisionEnter>(HandleCollisionWithEnemy);
