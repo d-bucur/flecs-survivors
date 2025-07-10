@@ -3,7 +3,7 @@ using System.Numerics;
 using Flecs.NET.Core;
 using Tiled;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 // TODO make into proper flecs module?
 class LevelLoader {

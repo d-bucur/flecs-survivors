@@ -3,7 +3,7 @@ using Raylib_cs;
 using System;
 using System.Numerics;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 // This is one big file with all game logic that doesn't fit in the others
 // Will break off logical groupings from here as they get big enough

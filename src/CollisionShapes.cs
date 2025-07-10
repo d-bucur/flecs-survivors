@@ -1,8 +1,7 @@
 using System;
 using System.Numerics;
-using flecs_test;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 interface IColliderShape {
 	public PenetrationData? GetPenetrationVec(IColliderShape other, ref Transform myTransf, ref Transform otherTransform);

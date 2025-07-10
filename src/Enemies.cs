@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using Flecs.NET.Core;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 record struct Enemy;
 record struct EnemySpawner(uint Level = 1, uint MaxLevel = 0);

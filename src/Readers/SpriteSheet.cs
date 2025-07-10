@@ -1,9 +1,9 @@
-global using PackingData = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, flecs_test.SpriteSheet.KeyframeRaw[]>>;
+global using PackingData = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, flecs_survivors.SpriteSheet.KeyframeRaw[]>>;
 using System.IO;
 using System.Text.Json;
 using Raylib_cs;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 // TODO super ugly. Refactor
 struct SpriteSheet {

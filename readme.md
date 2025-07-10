@@ -28,7 +28,7 @@ DOTNET_LegacyExceptionHandling=1 dotnet run
 Install [dotnet-trace](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#install). 
 ```
 # cd to build directory
-dotnet-trace collect --format Speedscope -- flecs-test
+dotnet-trace collect --format Speedscope -- flecs-survivors
 ```
 Creates trace that can be loaded in [speedscope](https://www.speedscope.app/)
 

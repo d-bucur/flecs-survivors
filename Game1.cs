@@ -3,7 +3,7 @@ using System.Numerics;
 using Flecs.NET.Core;
 using Raylib_cs;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 class GameCtx() {
     internal float TimeScale = 1.0f;
@@ -12,7 +12,7 @@ class GameCtx() {
 public class Program {
     public static void Main() {
         var winSize = new Vec2I(800, 480);
-        Raylib.InitWindow(winSize.X, winSize.Y, "Hello World");
+        Raylib.InitWindow(winSize.X, winSize.Y, "Flecs Survivors");
         Raylib.SetWindowState(ConfigFlags.ResizableWindow);
         Raylib.SetWindowMinSize(winSize.X, winSize.Y);
 

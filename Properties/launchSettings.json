@@ -1,6 +1,6 @@
 {
 	"profiles": {
-		"flecs-test": {
+		"flecs-survivors": {
 			"commandName": "Project",
 			"environmentVariables": {
 				"DOTNET_LegacyExceptionHandling": "1"

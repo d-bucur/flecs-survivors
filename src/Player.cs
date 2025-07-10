@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Raylib_cs;
 using System.Numerics;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 record struct Player;
 record struct Controls() {

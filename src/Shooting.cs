@@ -4,7 +4,7 @@ using System.Numerics;
 using Flecs.NET.Core;
 using Raylib_cs;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 record struct Shooter(List<IBulletPattern> Weapons, float Time = 0) {
 	public Vector2? Target;

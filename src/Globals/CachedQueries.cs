@@ -1,6 +1,6 @@
 using Flecs.NET.Core;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 public struct CachedQueries : IFlecsModule {
 	internal static Query<Camera> camera;

@@ -1,7 +1,7 @@
 using System.Numerics;
 using Flecs.NET.Core;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 struct Transform {
     public Vector2 Pos;

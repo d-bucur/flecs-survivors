@@ -7,7 +7,7 @@ using MonoGame.Extended.Collections;
 using System.Numerics;
 using Raylib_cs;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 enum PrePhysics;
 enum OnPhysics;

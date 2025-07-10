@@ -4,7 +4,7 @@ using System.Numerics;
 using Raylib_cs;
 using static System.Linq.Enumerable;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 record struct BulletData(Vector2 Vel, Vector2 Pos, Color Color, string SpriteName, float Pushback = 0f);
 

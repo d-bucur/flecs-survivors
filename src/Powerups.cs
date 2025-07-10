@@ -4,7 +4,7 @@ using System.Numerics;
 using Flecs.NET.Core;
 using Raylib_cs;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 record struct Powerup(ulong Value = 1);
 record struct PowerCollector(float Range, float Exp = 2f) {

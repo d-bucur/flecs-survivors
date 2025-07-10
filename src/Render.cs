@@ -5,7 +5,7 @@ using System.Text;
 using Flecs.NET.Core;
 using Raylib_cs;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 #region Components
 enum RenderPhase;

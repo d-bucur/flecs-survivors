@@ -4,7 +4,7 @@ using System.Numerics;
 using Flecs.NET.Core;
 using Raylib_cs;
 
-namespace flecs_test;
+namespace flecs_survivors;
 
 record struct FlowField(float CellSize, uint FullWidth) {
 	internal Vector2 Origin; // Center of player
