@@ -26,12 +26,7 @@ class PlayerModule : IFlecsModule {
         world.System<PhysicsBody, GlobalTransform>()
             .With<Player>()
             .Kind(Ecs.PostLoad)
-            .Each(PlayerMouseInput); ;
-
-        // TODO handle powerups
-        // world.Observer<PowerCollector, Shooter>()
-        //     .Event(Ecs.OnSet)
-        //     .Each(UpdateWeaponLevels);
+            .Each(PlayerMouseInput);
     }
 
     private void InitPlayer(ref World world) {
@@ -53,7 +48,7 @@ class PlayerModule : IFlecsModule {
             ])))
             .Set(new PowerCollector(200))
             .Set(new Health(10, 500))
-            .Observe<OnCollisionEnter>(HandlePowerCollected)
+            .Observe<OnCollisionEnter>(PowerupModule.HandlePowerCollected)
             .Observe<OnCollisionEnter>(HandleCollisionWithEnemy);
         world.Entity()
             .Set(new Transform(new Vector2(0, 15), new Vector2(2f, 2f), 0))
@@ -61,39 +56,6 @@ class PlayerModule : IFlecsModule {
             .Set(new Animator("Blue_witch", "charge", 75))
             .ChildOf(player);
         Console.WriteLine($"Player: {player.Id.Value}");
-    }
-
-    static void UpdateWeaponLevels(ref PowerCollector collector, ref Shooter shooter) {
-        // TODO update levelling logic
-        var level = 1 + (uint)collector.AccumulatedCurrent / 5;
-        foreach (var weapon in shooter.Weapons) {
-            if (weapon.Level == level) continue;
-            weapon.Level = level;
-            Console.WriteLine($"Updated weapon level to {level}");
-        }
-    }
-
-    static void HandlePowerCollected(Entity e, ref OnCollisionEnter collision) {
-        if (!collision.Other.Has<Powerup>() || !e.Has<PowerCollector>()) return;
-        bool shouldDestructOther = false;
-        collision.Other.Read((ref readonly Powerup powerup) => {
-            var powerupValue = powerup.Value;
-            e.Write((ref PowerCollector collector) => {
-                // Increment XP and level up
-                collector.AccumulatedCurrent += powerupValue;
-                collector.AccumulatedTotal += powerupValue;
-                long diff = (long)collector.AccumulatedCurrent - (long)collector.XpToNextLevel;
-                if (diff >= 0) {
-                    Console.WriteLine($"Level Up!");
-                    collector.AccumulatedCurrent = (ulong)diff;
-                    collector.LevelCurrent += 1;
-                    collector.XpToNextLevel *= (ulong)collector.Exp;
-                }
-                shouldDestructOther = true;
-            });
-        });
-        if (shouldDestructOther)
-            collision.Other.Destruct();
     }
 
     static void PlayerKeyInput(Entity e, ref PhysicsBody b, ref Shooter shooter) {

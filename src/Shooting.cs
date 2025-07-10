@@ -22,6 +22,7 @@ class ShootingModule : IFlecsModule {
 		world.System<Shooter, Transform, Heading>()
 			.Kind(Ecs.PreUpdate)
 			.Immediate()
+			.TickSource(Timers.runningTimer)
 			.Each(ProcessShooters);
 	}
 

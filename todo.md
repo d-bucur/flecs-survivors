@@ -4,7 +4,12 @@
 - menus & scenes (states and sub states)
 
 ## priority 2
-- more weapon types (aoe, split bullets etc)
+- more weapon types
+  - different bullet speeds
+  - aoe
+  - split bullets (SpawnOnDeath component)
+  - circle around player
+  - global damage
 
 ## priority 3
 - juice: dmg indicators?, custom particles?
@@ -30,3 +35,4 @@
 - bug: wonky displacement ever since added multithreading. issue with hash sizes?
 - bug: spread rotation is not centered
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why. Very rare
+- bug: if stopping the main timer or disabling integration, getting a lot of div0s (distances). overlapping entities that are triggering collisions?

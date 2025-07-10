@@ -97,7 +97,8 @@ class PhysicsModule : IFlecsModule {
         // TODO update to GlobalTransform
         world.System<Transform, PhysicsBody>("Integrate positions & velocities")
             .Kind<PrePhysics>()
-            .MultiThreaded()
+            .MultiThreaded() // Does this work?
+            .TickSource(Timers.runningTimer)
             .Each(IntegratePosition);
 
         world.System<SpatialMap>("Clear prev spatial map")
@@ -126,12 +127,14 @@ class PhysicsModule : IFlecsModule {
             .Read<SpatialMap>()
             .MultiThreaded()
             .Immediate()
-            .Run(HandleCollisions);
+            .Run(HandleCollisions)
+            .Entity.DependsOn(GameState.Running);
 
         world.System<Collider>("Emit collision events")
             .Kind<PostPhysics>()
             .MultiThreaded()
-            .Each(EmitCollisionEvents);
+            .Each(EmitCollisionEvents)
+            .Entity.DependsOn(GameState.Running);
 
         // Kind of useless? Just use velocity maybe?
         world.System<Heading, PhysicsBody>("Update headings")

@@ -56,12 +56,12 @@ class EnemiesModule : IFlecsModule {
 			.Iter(UpdateEnemyAccel);
 
 		world.System<EnemySpawner>()
-			.TickSource(world.Timer().Interval(5000f))
+			.TickSource(world.Timer().Rate(50, Timers.intervalTimer))
 			.Kind(Ecs.PreUpdate)
 			.Each(IncrementLevel);
 
 		world.System<EnemySpawner>()
-			.TickSource(world.Timer().Interval(300f))
+			.TickSource(world.Timer().Rate(3, Timers.intervalTimer))
 			.Kind(Ecs.PreUpdate)
 			// .Kind(Ecs.Disabled)
 			.Immediate()

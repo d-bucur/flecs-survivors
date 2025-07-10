@@ -22,6 +22,7 @@ struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER, Color?
     public PackingData? Packing = null; // TODO should only keep my own key
     public Color Tint = Tint.GetValueOrDefault(Color.White);
     public OriginAlign Align = align;
+    // TODO set to default in ctor. Can still get NPE in some cases
     public Vector2? Origin = null;
     public Rectangle DrawSource;
     public bool Flipped = false;
@@ -136,6 +137,7 @@ public struct Render : IFlecsModule {
         world.System<Animator, Sprite, ContentManager>()
             .TermAt(2).Singleton()
             .Kind<RenderPhase>()
+            .TickSource(Timers.runningTimer)
             .Each(UpdateAnimator);
 
         world.System<Tiled.TiledMap>()

@@ -12,13 +12,6 @@ record struct Scenery;
 record struct DespawnTimed(float TimeToDespawn, float TimeSinceSpawn = 0);
 record struct FollowTarget(Entity Target, float FollowSpeed = 0.25f, float FollowAnticipation = 0);
 
-record struct Powerup(ulong Value = 1);
-record struct PowerCollector(float Range, float Exp = 2f) {
-    public ulong AccumulatedCurrent = 0;
-    public ulong AccumulatedTotal = 0;
-    public ulong XpToNextLevel = 5;
-    public ulong LevelCurrent = 1;
-}
 public record struct Level(uint Value = 1);
 
 record struct Health(int MaxValue = 1, float OnLossInvulnTime = 300) {
@@ -44,20 +37,19 @@ class Main : IFlecsModule {
 
         world.System<DespawnTimed>()
             .Kind(Ecs.PreUpdate)
+            .TickSource(Timers.runningTimer)
             .Each(TickDespawnTimer);
 
         world.System<Health>()
             .Kind(Ecs.PreUpdate)
+            .TickSource(Timers.runningTimer)
             .Each(UpdateInvulnerabilities);
 
         world.System<Tween>()
             .Kind(Ecs.OnUpdate)
             .Immediate()
+            .TickSource(Timers.runningTimer)
             .Each(ProgressTweens);
-
-        world.System<Powerup, Transform, PhysicsBody>()
-            .Kind(Ecs.PreUpdate)
-            .Iter(AttractPowerups);
 
         world.System<FollowTarget, Transform>()
             .Kind(Ecs.PreStore)
@@ -77,7 +69,7 @@ class Main : IFlecsModule {
             .Each(InputTimeScale);
     }
 
-    static void MoveFollowTargets(ref FollowTarget follow, ref Transform transform) {
+	static void MoveFollowTargets(ref FollowTarget follow, ref Transform transform) {
         var targetPos = follow.Target.Get<Transform>().Pos; // should be GlobalTransform
         var currentPos = transform.Pos;
         // Anticipation not working great for camera. Disabling now
@@ -87,21 +79,6 @@ class Main : IFlecsModule {
         // if (body) targetPos += body.TryGet().Vel * follow.FollowAnticipation;
 
         transform.Pos = Vector2.Lerp(currentPos, targetPos, follow.FollowSpeed); ;
-    }
-
-    static void AttractPowerups(Iter it, Field<Powerup> powerup, Field<Transform> transform, Field<PhysicsBody> body) {
-        var collectorQ = it.World().QueryBuilder().With<PowerCollector>().Build();
-        var collector = collectorQ.First().Get<Transform>();
-        var rangeSq = MathF.Pow(collectorQ.First().Get<PowerCollector>().Range, 2);
-
-        const float SPEED = 0.3f;
-        foreach (var i in it) {
-            Vector2 dist = collector.Pos - transform[i].Pos;
-            if (dist.LengthSquared() >= rangeSq) continue;
-
-            dist = Vector2.Normalize(dist);
-            body[i].Vel = dist * SPEED;
-        }
     }
 
     static void TickDespawnTimer(Iter it, int i, ref DespawnTimed despawn) {

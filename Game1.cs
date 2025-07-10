@@ -78,6 +78,7 @@ public class Game {
         // _world.SetThreads(Environment.ProcessorCount);
         // _world.SetTaskThreads(Environment.ProcessorCount);
 
+        _world.Import<GameStateModule>();
         _world.Import<CachedQueries>();
         _world.Import<Render>();
         _world.Import<PhysicsModule>();
@@ -86,6 +87,7 @@ public class Game {
         _world.Import<PlayerModule>();
         _world.Import<EnemiesModule>();
         _world.Import<ShootingModule>();
+        _world.Import<PowerupModule>();
         // Ecs.Log.SetLevel(1);
     }
 
