@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Flecs.NET.Core;
 using Raylib_cs;
 using static System.Linq.Enumerable;
 
@@ -11,36 +12,18 @@ record struct BulletData(Vector2 Vel, Vector2 Pos, Color Color, string SpriteNam
 interface IBulletPattern {
     List<BulletData> Tick(double time, Vector2 direction, Vector2? target);
     uint Level { get; set; }
+    List<UpgradeChoice> Upgrades { get; }
+    string Name { get; }
 }
-
-// struct SimplePattern(float shootInterval) : IBulletPattern {
-//     List<BulletData> bulletData = new(10);
-//     double lastShotTime = 0;
-//     float shootInterval = shootInterval;
-//     const float SPEED = 7f;
-
-//     public uint Level { get => 1; set => _ = 1; }
-
-//     public List<BulletData> Tick(double time, Vector2 _, Vector2? target) {
-//         bulletData.Clear();
-//         if (time - lastShotTime < shootInterval)
-//             return bulletData;
-//         lastShotTime = time;
-
-//         bulletData.Add(new BulletData(new Vector2(SPEED, 0), Vector2.Zero));
-//         bulletData.Add(new BulletData(new Vector2(-SPEED, 0), Vector2.Zero));
-//         bulletData.Add(new BulletData(new Vector2(0, SPEED), Vector2.Zero));
-//         bulletData.Add(new BulletData(new Vector2(0, -SPEED), Vector2.Zero));
-//         return bulletData;
-//     }
-// }
 
 /// <summary>
 /// Flexible way of describing multiple patterns
 /// </summary>
-record struct UniformRotatingPattern(
+// TODO kind of a mess. Make everything a public field
+class UniformRotatingPattern(
     float shootInterval,
     Color Color,
+    string name,
     float bulletsPerShot = 1,
     float rotRadiansPerSec = 0,
     float scatterAngle = MathF.PI * 2,
@@ -51,10 +34,14 @@ record struct UniformRotatingPattern(
     float Pushback = 0f,
     string SpriteName = "bullet1"
 ) : IBulletPattern {
+    public string Name { get { return name; } }
+    public float bulletsPerShot = bulletsPerShot;
+    public float shootInterval = shootInterval;
+
     List<BulletData> bulletData = new((int)bulletsPerShot);
-    float bulletSpeed = bulletSpeed;
     double lastShotTime = 0;
     float rotation = 0;
+    public List<UpgradeChoice> Upgrades { get; internal set; } = [];
 
 
     uint _level = 1;
@@ -85,31 +72,79 @@ record struct UniformRotatingPattern(
 
         return bulletData;
     }
+
+    public UniformRotatingPattern WithUpgrades(List<UpgradeChoice> upgrades) {
+        Upgrades = upgrades;
+        return this;
+    }
 }
 
 class Weapons {
-    // Spiral shouldn't use any extra target
+    static Action<Entity> MakeUpgrade(string weaponName, Action<UniformRotatingPattern> upgradeApply) {
+        return (entity) => {
+            var w = (UniformRotatingPattern)entity.Get<Shooter>().GetWeapon(weaponName);
+            upgradeApply(w);
+        };
+    }
     public static readonly UniformRotatingPattern PresetSpiral =
-        new(600, Color.Green, 1, MathF.PI * 2, intervalFactorPerLevel: 0.8f, bulletsPerLevel: 0f, SpriteName: "bullet4", Pushback: 0.1f);
+        new UniformRotatingPattern(400, Color.Green, "Spiral", 1, MathF.PI * 2, intervalFactorPerLevel: 0.8f, bulletsPerLevel: 0f, SpriteName: "bullet4", Pushback: 0.1f)
+        .WithUpgrades([
+            new("Spiral\nextra bullet", MakeUpgrade("Spiral", w => w.bulletsPerShot++)),
+            new("Spiral\nshooting time", MakeUpgrade("Spiral", w => w.shootInterval *= 0.9f)),
+        ]);
     public static readonly UniformRotatingPattern PresetShotgun =
-        new(1500, Color.Red, 3, 0, 1, SpriteName: "bullet5", Pushback: 0.2f);
+        new UniformRotatingPattern(1500, Color.Red, "Shotgun", 3, 0, 1, SpriteName: "bullet5", Pushback: 0.2f)
+        .WithUpgrades([
+            new("Shotgun\nextra bullet", MakeUpgrade("Shotgun", w => w.bulletsPerShot++)),
+            new("Shotgun\nshooting time", MakeUpgrade("Shotgun", w => w.shootInterval *= 0.9f)),
+        ]);
     public static readonly UniformRotatingPattern PresetClosestSMG =
-        new(1000, Color.Blue, targetOrDirectionRotated: true, bulletsPerLevel: 0, intervalFactorPerLevel: 0.9f, SpriteName: "bullet1", Pushback: 0.3f);
+        new UniformRotatingPattern(1000, Color.Blue, "SMG", targetOrDirectionRotated: true, bulletsPerLevel: 0, intervalFactorPerLevel: 0.9f, SpriteName: "bullet1", Pushback: 0.3f)
+        .WithUpgrades([
+            new("SMG\nextra bullet", MakeUpgrade("SMG", w => w.bulletsPerShot++)),
+            new("SMG\nshooting time", MakeUpgrade("SMG", w => w.shootInterval *= 0.9f)),
+        ]);
     public static readonly UniformRotatingPattern PresetSpread =
-        new(2000, Color.Purple, 4, MathF.PI, SpriteName: "bullet7", Pushback: 0f);
+        new UniformRotatingPattern(2000, Color.Purple, "Spread", 4, MathF.PI, SpriteName: "bullet7", Pushback: 0f)
+        .WithUpgrades([
+            new("Spread\nextra bullet", MakeUpgrade("Spread", w => w.bulletsPerShot++)),
+            new("Spread\nshooting time", MakeUpgrade("Spread", w => w.shootInterval *= 0.9f)),
+        ]);
 }
 
-class WeaponsTest {
-    public static readonly UniformRotatingPattern PresetSpiral =
-        new(200, Color.Blue, 1, MathF.PI * 2, intervalFactorPerLevel: 0.8f, bulletsPerLevel: 0f);
-    public static readonly UniformRotatingPattern PresetShotgun =
-        new(1000, Color.Blue, 2, 0, 1);
-    public static readonly UniformRotatingPattern PresetClosestSMG =
-        new(500, Color.Blue, targetOrDirectionRotated: true, bulletsPerLevel: 0, intervalFactorPerLevel: 0.9f);
-    public static readonly UniformRotatingPattern PresetWeak =
-        new(700, Color.Blue, targetOrDirectionRotated: true, bulletsPerLevel: 0);
-    public static readonly UniformRotatingPattern PresetSpread =
-        new(300, Color.Blue, 8, MathF.PI);
-    public static readonly UniformRotatingPattern PresetDOOM =
-        new(100, Color.Blue, 2, MathF.PI * 2, intervalFactorPerLevel: 0.4f, bulletsPerLevel: 1f);
-}
+// class WeaponsDebug {
+//     public static readonly UniformRotatingPattern PresetSpiral =
+//         new(200, Color.Blue, 1, MathF.PI * 2, intervalFactorPerLevel: 0.8f, bulletsPerLevel: 0f);
+//     public static readonly UniformRotatingPattern PresetShotgun =
+//         new(1000, Color.Blue, 2, 0, 1);
+//     public static readonly UniformRotatingPattern PresetClosestSMG =
+//         new(500, Color.Blue, targetOrDirectionRotated: true, bulletsPerLevel: 0, intervalFactorPerLevel: 0.9f);
+//     public static readonly UniformRotatingPattern PresetWeak =
+//         new(700, Color.Blue, targetOrDirectionRotated: true, bulletsPerLevel: 0);
+//     public static readonly UniformRotatingPattern PresetSpread =
+//         new(300, Color.Blue, 8, MathF.PI);
+//     public static readonly UniformRotatingPattern PresetDOOM =
+//         new(100, Color.Blue, 2, MathF.PI * 2, intervalFactorPerLevel: 0.4f, bulletsPerLevel: 1f);
+// }
+
+// struct SimplePattern(float shootInterval) : IBulletPattern {
+//     List<BulletData> bulletData = new(10);
+//     double lastShotTime = 0;
+//     float shootInterval = shootInterval;
+//     const float SPEED = 7f;
+
+//     public uint Level { get => 1; set => _ = 1; }
+
+//     public List<BulletData> Tick(double time, Vector2 _, Vector2? target) {
+//         bulletData.Clear();
+//         if (time - lastShotTime < shootInterval)
+//             return bulletData;
+//         lastShotTime = time;
+
+//         bulletData.Add(new BulletData(new Vector2(SPEED, 0), Vector2.Zero));
+//         bulletData.Add(new BulletData(new Vector2(-SPEED, 0), Vector2.Zero));
+//         bulletData.Add(new BulletData(new Vector2(0, SPEED), Vector2.Zero));
+//         bulletData.Add(new BulletData(new Vector2(0, -SPEED), Vector2.Zero));
+//         return bulletData;
+//     }
+// }

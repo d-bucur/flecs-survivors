@@ -11,7 +11,7 @@ class GameCtx() {
 
 public class Program {
     public static void Main() {
-        var winSize = new Vec2I(800, 480);
+        var winSize = new Vec2I(1024, 600);
         Raylib.InitWindow(winSize.X, winSize.Y, "Flecs Survivors");
         Raylib.SetWindowState(ConfigFlags.ResizableWindow);
         Raylib.SetWindowMinSize(winSize.X, winSize.Y);

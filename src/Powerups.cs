@@ -7,40 +7,60 @@ using Raylib_cs;
 namespace flecs_survivors;
 
 record struct Powerup(ulong Value = 1);
-record struct PowerCollector(float Range, float Exp = 2f) {
+record struct PowerCollector(float Range, float Exp = 1.6f) {
     public ulong AccumulatedCurrent = 0;
     public ulong AccumulatedTotal = 0;
     public ulong XpToNextLevel = 5;
     public ulong LevelCurrent = 1;
 }
 
-struct LevelUpChoices {
-    public LevelUpChoices() { }
+record struct UpgradeChoice(string Description, Action<Entity> Apply, bool IsRepeatable = true);
+struct CurrentUpgradeChoices() {
     public List<UpgradeChoice> Value = new();
-
     public bool Enabled = false;
     public Vector2 AnchorUI;
 }
-record struct UpgradeChoice(string Description, Action Apply);
-
+struct UpgradeDeck() {
+    public List<UpgradeChoice> Value = new();
+}
 
 class PowerupModule : IFlecsModule {
     public void InitModule(World world) {
+        InitPowerupDeck(world);
+
         world.System<Powerup, Transform, PhysicsBody>()
             .Kind(Ecs.PreUpdate)
             .Iter(AttractPowerups);
 
-        world.System<RenderCtx, LevelUpChoices>()
+        world.System<RenderCtx, CurrentUpgradeChoices>()
             .TermAt(0).Singleton()
             .Kind<PostRenderPhase>()
             .Each(DrawLevelUpScreen)
             .Entity.DependsOn(GameState.LevelUp);
 
-        world.System<LevelUpChoices>()
+        world.System<CurrentUpgradeChoices>()
             .With<Player>()
             .Kind(Ecs.PostLoad)
             .Each(ProcessUpgradeChoices)
             .Entity.DependsOn(GameState.LevelUp);
+    }
+
+    private static void InitPowerupDeck(World world) {
+        UpgradeDeck deck = new();
+        deck.Value = [
+            new UpgradeChoice("Shotgun Weapon", MakeNewWeaponUpgrade(Weapons.PresetShotgun), false),
+            new UpgradeChoice("Spiral Weapon", MakeNewWeaponUpgrade(Weapons.PresetSpiral), false),
+            new UpgradeChoice("Spread Weapon", MakeNewWeaponUpgrade(Weapons.PresetSpread), false),
+            new UpgradeChoice("SMG Weapon", MakeNewWeaponUpgrade(Weapons.PresetClosestSMG), false),
+        ];
+        world.Set(deck);
+    }
+
+    private static Action<Entity> MakeNewWeaponUpgrade(IBulletPattern weapon) {
+        return entity => {
+            entity.Get<Shooter>().Weapons.Add(weapon);
+            entity.CsWorld().Get<UpgradeDeck>().Value.AddRange(weapon.Upgrades);
+        };
     }
 
     static void AttractPowerups(Iter it, Field<Powerup> powerup, Field<Transform> transform, Field<PhysicsBody> body) {
@@ -58,37 +78,46 @@ class PowerupModule : IFlecsModule {
         }
     }
 
-    private void ProcessUpgradeChoices(Entity e, ref LevelUpChoices choices) {
+    private void ProcessUpgradeChoices(Entity e, ref CurrentUpgradeChoices choices) {
         if (!choices.Enabled) return;
 
         int choiceIdx = -1;
-        if (Raylib.IsKeyPressed(KeyboardKey.W)) choiceIdx = 0;
-        else if (Raylib.IsKeyPressed(KeyboardKey.A)) choiceIdx = 1;
-        else if (Raylib.IsKeyPressed(KeyboardKey.S)) choiceIdx = 2;
-        else if (Raylib.IsKeyPressed(KeyboardKey.D)) choiceIdx = 3;
+        if (Raylib.IsKeyPressed(KeyboardKey.Q)) choiceIdx = 0;
+        else if (Raylib.IsKeyPressed(KeyboardKey.E)) choiceIdx = 1;
+        else if (Raylib.IsKeyPressed(KeyboardKey.Z)) choiceIdx = 2;
+        else if (Raylib.IsKeyPressed(KeyboardKey.C)) choiceIdx = 3;
         if (choiceIdx == -1) return;
 
-        choices.Value[choiceIdx].Apply();
-        e.Remove<LevelUpChoices>();
+        choices.Value[choiceIdx].Apply(e);
+        var deck = e.CsWorld().Get<UpgradeDeck>();
+        for (int i = 0; i < choices.Value.Count; i++) {
+            bool reshuffle = i != choiceIdx || choices.Value[choiceIdx].IsRepeatable;
+            if (reshuffle)
+                deck.Value.Add(choices.Value[i]);
+        }
+        e.Remove<CurrentUpgradeChoices>();
         GameState.ChangeState(GameState.Running);
     }
 
     internal static void CreateUpgradeChoices(Entity e) {
         GameState.ChangeState(GameState.LevelUp);
-        Console.WriteLine($"Building upgrades");
 
-        LevelUpChoices choices = new();
-        choices.Value.Add(new UpgradeChoice("Shotgun Weapon", () => e.Get<Shooter>().Weapons.Add(Weapons.PresetShotgun)));
-        choices.Value.Add(new UpgradeChoice("Spiral Weapon", () => e.Get<Shooter>().Weapons.Add(Weapons.PresetSpiral)));
-        choices.Value.Add(new UpgradeChoice("Spread Weapon", () => e.Get<Shooter>().Weapons.Add(Weapons.PresetSpread)));
-        choices.Value.Add(new UpgradeChoice("SMG Weapon", () => e.Get<Shooter>().Weapons.Add(Weapons.PresetClosestSMG)));
+        var deck = e.CsWorld().Get<UpgradeDeck>();
+        CurrentUpgradeChoices choices = new();
+        for (int i = 0; i < 4 && deck.Value.Count > 0; i++) {
+            int randomIdx = Random.Shared.Next() % deck.Value.Count;
+            UpgradeChoice selected = deck.Value[randomIdx];
+            deck.Value.RemoveAt(randomIdx);
+            choices.Value.Add(selected);
+        }
         e.Set(choices);
 
+        // Tween in UI animation
         new Tween(e).With(
-            (ref LevelUpChoices c, Vector2 v) => { c.AnchorUI = v; },
+            (ref CurrentUpgradeChoices c, Vector2 v) => { c.AnchorUI = v; },
             new Vector2(100, 600), new Vector2(100, 100),
             1500f, Ease.QuartOut, Vector2.Lerp,
-            (ref LevelUpChoices c) => { c.Enabled = true; }
+            (ref CurrentUpgradeChoices c) => { c.Enabled = true; }
         ).RegisterEcs();
     }
 
@@ -106,7 +135,7 @@ class PowerupModule : IFlecsModule {
                     CreateUpgradeChoices(e);
                     collector.AccumulatedCurrent = (ulong)diff;
                     collector.LevelCurrent += 1;
-                    collector.XpToNextLevel *= (ulong)collector.Exp;
+                    collector.XpToNextLevel = (ulong)((double)collector.XpToNextLevel * collector.Exp);
                 }
                 shouldDestructOther = true;
             });
@@ -125,15 +154,19 @@ class PowerupModule : IFlecsModule {
     //     }
     // }
 
-    private void DrawLevelUpScreen(ref RenderCtx ctx, ref LevelUpChoices choices) {
+    private void DrawLevelUpScreen(ref RenderCtx ctx, ref CurrentUpgradeChoices choices) {
         var offset = choices.AnchorUI;
         int width = ctx.WinSize.X / 3;
         int height = ctx.WinSize.Y / 3;
         Render.DrawTextShadowed("Choose an upgrade", (int)offset.X + width, (int)offset.Y - 30);
-        DrawUpgradeChoice($"{choices.Value[0].Description}\nPress W", new Rectangle(offset.X, offset.Y, width, height));
-        DrawUpgradeChoice($"{choices.Value[1].Description}\nPress A", new Rectangle(offset.X, offset.Y + height, width, height));
-        DrawUpgradeChoice($"{choices.Value[2].Description}\nPress S", new Rectangle(offset.X + width, offset.Y, width, height));
-        DrawUpgradeChoice($"{choices.Value[3].Description}\nPress D", new Rectangle(offset.X + width, offset.Y + height, width, height));
+        if (choices.Value.Count > 0)
+            DrawUpgradeChoice($"{choices.Value[0].Description}\nPress Q", new Rectangle(offset.X, offset.Y, width, height));
+        if (choices.Value.Count > 1)
+            DrawUpgradeChoice($"{choices.Value[1].Description}\nPress E", new Rectangle(offset.X, offset.Y + height, width, height));
+        if (choices.Value.Count > 2)
+            DrawUpgradeChoice($"{choices.Value[2].Description}\nPress Z", new Rectangle(offset.X + width, offset.Y, width, height));
+        if (choices.Value.Count > 3)
+            DrawUpgradeChoice($"{choices.Value[3].Description}\nPress C", new Rectangle(offset.X + width, offset.Y + height, width, height));
     }
 
     private void DrawUpgradeChoice(string text, Rectangle rect) {

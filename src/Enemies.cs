@@ -5,12 +5,13 @@ using Flecs.NET.Core;
 namespace flecs_survivors;
 
 record struct Enemy;
-record struct EnemySpawner(uint Level = 1, uint MaxLevel = 0);
+record struct EnemySpawner(uint Level = 1, uint MaxLevel = 0, float Radius = 1000);
 
 class EnemiesModule : IFlecsModule {
 	#region init
 	public void InitModule(World world) {
-		world.Entity("EnemySpawner").Set(new EnemySpawner(1, 10));
+		var renderCtx = world.Get<RenderCtx>();
+		world.Entity("EnemySpawner").Set(new EnemySpawner(1, 10, (renderCtx.WinSize.ToVector2() / 2).Length() * 1.05f));
 
 		world.Set(new FlowField(64, 15));
 
@@ -56,12 +57,12 @@ class EnemiesModule : IFlecsModule {
 			.Iter(UpdateEnemyAccel);
 
 		world.System<EnemySpawner>()
-			.TickSource(world.Timer().Rate(100, Timers.intervalTimer))
+			.TickSource(world.Timer().Rate(150, Timers.intervalTimer))
 			.Kind(Ecs.PreUpdate)
 			.Each(IncrementLevel);
 
 		world.System<EnemySpawner>()
-			.TickSource(world.Timer().Rate(5, Timers.intervalTimer))
+			.TickSource(world.Timer().Rate(6, Timers.intervalTimer))
 			.Kind(Ecs.PreUpdate)
 			// .Kind(Ecs.Disabled)
 			.Immediate()
@@ -85,11 +86,10 @@ class EnemiesModule : IFlecsModule {
 		var world = it.World();
 		var playerQ = world.QueryBuilder().With<Player>().Build();
 		var playerTransform = playerQ.First().Get<Transform>();
-		const float RADIUS = 500;
 
 		foreach (var i in it) {
 			var angle = Random.Shared.NextSingle() * MathF.PI * 2;
-			var pos = Vector2.UnitX.Rotate(angle) * RADIUS + playerTransform.Pos;
+			var pos = Vector2.UnitX.Rotate(angle) * spawner[i].Radius + playerTransform.Pos;
 			SpawnEnemy(ref world, pos, spawner[i].Level);
 		}
 	}
@@ -289,7 +289,7 @@ class EnemiesModule : IFlecsModule {
 
 	static void UpdateEnemyAccel(Iter it, Field<Transform> transform, Field<PhysicsBody> body, Field<FlowField> flow) {
 		// Get Transform of Player and update all Enemy bodies to follow
-		const float ACCEL = 0.5f / 1000;
+		const float ACCEL = 0.4f / 1000;
 		const float SMOOTH_ACCEL_COEFF = 0.8f;
 
 		var query = it.World().QueryBuilder<Transform>().With<Player>().Build();

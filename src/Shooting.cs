@@ -9,6 +9,11 @@ namespace flecs_survivors;
 record struct Shooter(List<IBulletPattern> Weapons, float Time = 0) {
 	public Vector2? Target;
 	public bool Enabled = true;
+	// Can make more efficient by using map
+	public IBulletPattern GetWeapon(string name) {
+		var v = Weapons.FindIndex((p) => p.Name == name);
+		return Weapons[v];
+	}
 }
 record struct Bullet(float Pushback = 0f);
 
@@ -41,6 +46,8 @@ class ShootingModule : IFlecsModule {
 					closestEnemy = enemy.Pos;
 				}
 			});
+			const int MAX_TARGET_DISTANCE = 400 * 400;
+			if (smallestDistance > MAX_TARGET_DISTANCE) return;
 			shooter[shooterId].Target = closestEnemy is null ? null : myPos - closestEnemy;
 		}
 	}

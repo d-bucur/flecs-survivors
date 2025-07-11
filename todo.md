@@ -1,12 +1,13 @@
 ## priority 1
-- more flexible power up system
 - menus & scenes (states and sub states)
 
 ## priority 2
 - more weapon types
+  - bullet damage
   - different bullet speeds
   - aoe
   - split bullets (SpawnOnDeath component)
+  - bounce bullets
   - circle around player
   - global damage
 
@@ -22,6 +23,7 @@
 - refactor: don't expose structs as fields: https://docs.flatredball.com/flatredball/contributing/general-programming-flatredball-programming-style-guide#structs-as-fields
 - cache queries: https://www.flecs.dev/flecs/md_docs_2Queries.html#performance-and-caching
 - rotated rectangles in physics engine?
+- too many entities? starting at ~500. Need to debug
 
 ## optional
 - split screen multiplayer
@@ -35,4 +37,4 @@
 - bug: spread rotation is not centered
 - bug: program probably crashes if enemy spawn exactly on top of obstacle. Not 100% sure why. Very rare
 - bug: if stopping the main timer or disabling integration, getting a lot of div0s (distances). overlapping entities that are triggering collisions?
-- bug: sometimes entities disappear. Maybe same as div0 errors above. Happening more often since added level up screen
+- bug: sometimes entities disappear. Maybe same as div0 errors above. Happening more often since added level up screen. Something weird happening around origin (0,0). Seems like an empty object is stuck there and colliding
