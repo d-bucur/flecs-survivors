@@ -283,7 +283,8 @@ public struct Render : IFlecsModule {
             DrawBar((float)power.AccumulatedCurrent / power.XpToNextLevel, margin, width, 0, Color.Purple, $"{power.AccumulatedCurrent}/{power.XpToNextLevel} Lvl {power.LevelCurrent}");
         });
 
-        DrawTextShadowed($"Entities: {it.World().Count(Ecs.Any)}", ctx.WinSize.X - 200, ctx.WinSize.Y - 30, 20);
+        DrawTextShadowed($"Entities: {it.World().Count<InGameEntity>()}",
+            ctx.WinSize.X - 200, ctx.WinSize.Y - 30, 20);
         Raylib.DrawFPS(10, ctx.WinSize.Y - 30);
 
         var sb = new StringBuilder();

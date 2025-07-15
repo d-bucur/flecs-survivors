@@ -5,8 +5,6 @@ using flecs_survivors;
 
 record struct OnStateEntered(Entity OldState);
 record struct OnStateLeft(Entity NewState);
-// TODO can maybe just replace this with OnStateChange for InitGame
-enum InitGameEvent;
 
 // Common tag for states in GameState. Not really used right now
 enum GameStateTag;
@@ -29,6 +27,10 @@ struct GameState {
 	/// Main menu screen
 	/// </summary>
 	public static Entity MainMenu;
+	/// <summary>
+	/// Temporary state in which we destroy the previous level and move into InitGame when done
+	/// </summary>
+	public static Entity PreInitGame;
 	/// <summary>
 	/// Temporary state in which we initialize the level and move into Running when done
 	/// </summary>
@@ -73,7 +75,7 @@ struct GameState {
 
 	internal static void StartGame() {
 		CurrentState = GameOver; // any state other than the first one, just for the init
-		AllStates = [MainMenu, InitGame, Running, LevelUp, GameOver];
+		AllStates = [MainMenu, PreInitGame, InitGame, Running, LevelUp, GameOver];
 		AllStates.ForEach(s => s.Disable());
 		ChangeState(MainMenu);
 	}
@@ -111,10 +113,13 @@ class GameStateModule : IFlecsModule {
 
 	private static void InitGameState(World world) {
 		GameState.MainMenu = world.Component("MainMenuState").Add<GameStateTag>();
-		GameState.InitGame = world.Component("InitGameState").Add<GameStateTag>()
+		GameState.PreInitGame = world.Component("PreInitGameState").Add<GameStateTag>()
 			.Entity.Observe((Entity _, ref OnStateEntered e) => {
 				ClearGameEntities();
-				GameState.InitGame.Enqueue(new InitGameEvent());
+				GameState.ChangeState(GameState.InitGame);
+			});
+		GameState.InitGame = world.Component("InitGameState").Add<GameStateTag>()
+			.Entity.Observe((Entity _, ref OnStateEntered e) => {
 				GameState.ChangeState(GameState.Running);
 			});
 		GameState.Running = world.Component("RunningState").Add<GameStateTag>();

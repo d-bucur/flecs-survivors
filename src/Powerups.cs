@@ -26,7 +26,7 @@ struct UpgradeDeck() {
 
 class PowerupModule : IFlecsModule {
     public void InitModule(World world) {
-        GameState.InitGame.Observe<InitGameEvent>(() => InitPowerupDeck(ref world));
+        GameState.InitGame.Observe<OnStateEntered>(() => InitPowerupDeck(ref world));
 
         world.System<Powerup, Transform, PhysicsBody>()
             .Kind(Ecs.PreUpdate)

@@ -16,7 +16,7 @@ class PlayerModule : IFlecsModule {
 
     public void InitModule(World world) {
         world.Set(new Controls());
-        GameState.InitGame.Observe<InitGameEvent>(() => InitPlayer(ref world));
+        GameState.InitGame.Observe<OnStateEntered>(() => InitPlayer(ref world));
 
         world.System<PhysicsBody, Shooter>()
             .With<Player>()

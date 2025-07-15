@@ -12,7 +12,8 @@ class LevelLoader : IFlecsModule {
         map.TileHeight *= 2;
         map.TileWidth *= 2;
         world.Set(map);
-        GameState.InitGame.Observe<InitGameEvent>(() => InitLevelColliders(ref world, ref map));
+        
+        GameState.InitGame.Observe<OnStateEntered>(() => InitLevelColliders(ref world, ref map));
 	}
 
     private static void InitLevelColliders(ref World world, ref TiledMap map) {

@@ -99,7 +99,7 @@ file class MainMenu : MenuBase<MainMenuTag> {
 	override protected void HandleMenuTransition(ref MenuSelectable selectable, ref InputManager actions) {
 		if (actions.IsPressed(InputActions.CONFIRM)) {
 			if (selectable.CurrentValue == 0) {
-				GameState.ChangeState(GameState.InitGame);
+				GameState.ChangeState(GameState.PreInitGame);
 			}
 		}
 	}
@@ -113,7 +113,7 @@ file class GameOverMenu : MenuBase<GameOverTag> {
 	override protected void HandleMenuTransition(ref MenuSelectable selectable, ref InputManager actions) {
 		if (actions.IsPressed(InputActions.CONFIRM)) {
 			if (selectable.CurrentValue == 0) {
-				GameState.ChangeState(GameState.InitGame);
+				GameState.ChangeState(GameState.PreInitGame);
 			}
 			if (selectable.CurrentValue == 1) {
 				GameState.ChangeState(GameState.MainMenu);
