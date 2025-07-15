@@ -67,11 +67,6 @@ class EnemiesModule : IFlecsModule {
 			// .Kind(Ecs.Disabled)
 			.Immediate()
 			.Iter(SpawnEnemies);
-
-		world.Observer<GlobalTransform, Level>()
-			.With<Enemy>()
-			.Event(Ecs.OnRemove)
-			.Each(PowerupOnDeath);
 	}
 	#endregion init
 
@@ -97,13 +92,15 @@ class EnemiesModule : IFlecsModule {
 	static void SpawnEnemy(ref World world, Vector2 pos, uint level) {
 		var enemy = world.Entity()
 			.Add<Enemy>()
+			.Add<InGameEntity>()
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
 			.Set(new Collider(new SphereCollider(17), CollisionFlags.ENEMY, CollisionFlags.ALL & ~CollisionFlags.POWERUP))
 			.Set(new Health((int)level))
 			.Set(new Level(level))
 			.Observe<OnCollisionEnter>(HandleEnemyCollision)
-			.Observe<DeathEvent>(HandleEnemyDeath);
+			.Observe<DeathEvent>(HandleEnemyDeath)
+			.Observe<DeathEvent>(PowerupOnDeath);
 		var sprite = world.Entity("Sprite")
 			.Set(new Sprite(Textures.MEGA_SHEET))
 			.ChildOf(enemy);
@@ -191,19 +188,22 @@ class EnemiesModule : IFlecsModule {
 	}
 	#endregion
 
-	static void PowerupOnDeath(Entity e, ref GlobalTransform t, ref Level level) {
+	static void PowerupOnDeath(Entity e, ref DeathEvent t) {
 		// Spawn power pickup
-		Entity power = e.CsWorld().Entity()
-			.Add<Trigger>()
-			.Set(new Powerup(level.Value))
-			.Set(new Transform(t.Pos, Vector2.One, 0))
-			.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
-			.Set(new DespawnTimed(30000f))
-			.Set(new Collider(new SphereCollider(15), CollisionFlags.POWERUP, CollisionFlags.PLAYER));
-		e.CsWorld().Entity()
-			.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
-			.Set(new Sprite("Content/sprites/slime.png"))
-			.ChildOf(power);
+		e.Read((ref readonly Level level, ref readonly GlobalTransform transf) => {
+			Entity power = e.CsWorld().Entity()
+				.Add<Trigger>()
+				.Add<InGameEntity>()
+				.Set(new Powerup(level.Value))
+				.Set(new Transform(transf.Pos, Vector2.One, 0))
+				.Set(new PhysicsBody(Vector2.Zero, Vector2.Zero))
+				.Set(new DespawnTimed(30000f))
+				.Set(new Collider(new SphereCollider(15), CollisionFlags.POWERUP, CollisionFlags.PLAYER));
+			e.CsWorld().Entity()
+				.Set(new Transform(new Vector2(0, 15), new Vector2(0.5f, 0.5f), 0))
+				.Set(new Sprite("Content/sprites/slime.png"))
+				.ChildOf(power);
+		});
 	}
 
 	static void HandleEnemyCollision(Entity enemy, ref OnCollisionEnter collision) {
@@ -244,6 +244,7 @@ class EnemiesModule : IFlecsModule {
 		sprite.Remove(Ecs.ChildOf, e);
 		e.Destruct();
 
+		// Tween animation
 		const int ANIM_TIME = 500;
 		const int PUSHBACK = 50;
 		new Tween(sprite).With(

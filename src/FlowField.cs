@@ -6,7 +6,8 @@ using Raylib_cs;
 
 namespace flecs_survivors;
 
-record struct FlowField(float CellSize, uint FullWidth) {
+// Flags generates a ton of garbage. Arrays shouldnn't be copied even if inside structs, so what's going on here?
+record class FlowField(float CellSize, uint FullWidth) {
 	internal Vector2 Origin; // Center of player
 	internal readonly uint FullWidth = FullWidth;
 	internal readonly uint SideWidth = (FullWidth - 1) / 2;
@@ -24,7 +25,7 @@ record struct FlowField(float CellSize, uint FullWidth) {
 		VisitedFlow = 1,
 	}
 
-	public readonly Vec2I? ToFieldPos(Vector2 pos) {
+	public Vec2I? ToFieldPos(Vector2 pos) {
 		var fieldPos = (pos - Origin + CellCenterOffset) / CellSize;
 		var hash = new Vec2I((int)float.Floor(fieldPos.X), (int)float.Floor(fieldPos.Y));
 		if (IsOutsideBounds(hash))
@@ -32,15 +33,15 @@ record struct FlowField(float CellSize, uint FullWidth) {
 		return hash;
 	}
 
-	private readonly bool IsOutsideBounds(Vec2I pos) {
+	private bool IsOutsideBounds(Vec2I pos) {
 		return Math.Abs(pos.X) > SideWidth || Math.Abs(pos.Y) > SideWidth;
 	}
 
-	public readonly uint ToKey(Vec2I pos) {
+	public uint ToKey(Vec2I pos) {
 		return (uint)((pos.Y + (int)SideWidth) * FullWidth + pos.X + (int)SideWidth);
 	}
 
-	public readonly uint? ToKeySafe(Vec2I pos) {
+	public uint? ToKeySafe(Vec2I pos) {
 		return IsOutsideBounds(pos) ? null : ToKey(pos);
 	}
 }
@@ -49,6 +50,7 @@ class FlowFieldECS {
 	internal static void AddSceneryCost(Iter it) {
 		ref readonly var field = ref it.World().Get<FlowField>();
 		// Array.Fill<uint>(field.Costs, 0); // span should be faster than Array.Fill
+		// TODO is Clear allocating a new array every time? Replace with Fill and profile gc
 		new Span<uint>(field.Costs).Clear();
 
 		while (it.Next()) {
@@ -85,7 +87,7 @@ class FlowFieldECS {
 	private static Queue<Vec2I> ToVisit = new(20);
 	private static void Integration(ref FlowField field) {
 		new Span<uint>(field.Integration).Fill(uint.MaxValue);
-		new Span<FlowField.CellFlags>(field.Flags).Clear();
+		new Span<FlowField.CellFlags>(field.Flags).Fill(FlowField.CellFlags.None);
 
 		ToVisit.Enqueue((0, 0));
 		while (ToVisit.Count > 0) {

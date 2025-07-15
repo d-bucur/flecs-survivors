@@ -15,8 +15,8 @@ class PlayerModule : IFlecsModule {
     const float PLAYER_ACCEL = 2f / 1000;
 
     public void InitModule(World world) {
-        InitPlayer(ref world);
         world.Set(new Controls());
+        GameState.InitGame.Observe<InitGameEvent>(() => InitPlayer(ref world));
 
         world.System<PhysicsBody, Shooter>()
             .With<Player>()
@@ -33,11 +33,12 @@ class PlayerModule : IFlecsModule {
 
     private void InitPlayer(ref World world) {
         var map = world.Get<Tiled.TiledMap>();
-        var start = new Vector2(map.Width * map.TileWidth / 2, map.Height * map.TileHeight / 2);
+        var startPos = new Vector2(map.Width * map.TileWidth / 2, map.Height * map.TileHeight / 2);
 
         Entity player = world.Entity("Player")
             .Add<Player>()
-            .Set(new Transform(start, Vector2.One, 0))
+            .Add<InGameEntity>()
+            .Set(new Transform(startPos, Vector2.One, 0))
             .Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0.2f, 0.85f))
             .Set(new Collider(new SphereCollider(17), CollisionFlags.PLAYER, CollisionFlags.ALL & ~CollisionFlags.BULLET))
             .Set(new Heading())
@@ -49,7 +50,7 @@ class PlayerModule : IFlecsModule {
                 // Weapons.PresetSpread,
             ])))
             .Set(new PowerCollector(250))
-            .Set(new Health(10, 500))
+            .Set(new Health(3, 500))
             .Observe<OnCollisionEnter>(PowerupModule.HandlePowerCollected)
             .Observe<OnCollisionEnter>(HandleCollisionWithEnemy);
         world.Entity()
@@ -57,6 +58,10 @@ class PlayerModule : IFlecsModule {
             .Set(new Sprite(Textures.MEGA_SHEET))
             .Set(new Animator("Blue_witch", "charge", 75))
             .ChildOf(player);
+
+        CachedQueries.camera.First()
+            .Set(new FollowTarget(player))
+            .Set(new Transform(startPos, Vector2.One));
         Console.WriteLine($"Player: {player.Id.Value}");
     }
 
@@ -93,8 +98,8 @@ class PlayerModule : IFlecsModule {
         if (!collision.Other.Has<Enemy>()) return;
         if (Main.DecreaseHealth(player, collision.Data.Penetration)) {
             if (player.Get<Health>().Value <= 0) {
-                // TODO restart level
                 Console.WriteLine($"Game Over");
+                GameState.ChangeState(GameState.InitGame);
             }
             Main.FlashDamage(player);
             Main.CameraShake(10);

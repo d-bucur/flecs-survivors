@@ -114,11 +114,7 @@ public struct Render : IFlecsModule {
     #region Init
     public unsafe void InitModule(World world) {
         world.Set(new ContentManager());
-
-        world.System()
-            .With<Player>()
-            .Kind(Ecs.OnStart)
-            .Iter(InitCamera);
+        InitCamera(ref world);
 
         world.Observer<Sprite, ContentManager>()
             .Event(Ecs.OnSet)
@@ -167,17 +163,11 @@ public struct Render : IFlecsModule {
         return (int)(p1 - p2);
     }
 
-    static void InitCamera(Iter it) {
-        var world = it.World();
+    static void InitCamera(ref World world) {
         var renderCtx = world.Get<RenderCtx>();
-        world.QueryBuilder<Transform>().With<Player>().Build()
-        .Each((Entity player, ref Transform playerTransf) => {
-            var cameraOffset = renderCtx.WinSize / 2;
-            world.Entity("Camera")
-                .Set(new Camera(new Camera2D(cameraOffset.ToVector2(), Vector2.Zero, 0, 1), 800, 480))
-                .Set(new Transform(playerTransf.Pos, Vector2.One))
-                .Set(new FollowTarget(player));
-        });
+        var cameraOffset = renderCtx.WinSize / 2;
+        world.Entity("Camera")
+            .Set(new Camera(new Camera2D(cameraOffset.ToVector2(), Vector2.Zero, 0, 1), 800, 480));
     }
 
     static void UpdateCameraTransform(ref Camera camera, ref GlobalTransform global) {

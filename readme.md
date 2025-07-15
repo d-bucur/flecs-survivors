@@ -24,6 +24,16 @@ Error handling inside systems [doesn't work](https://github.com/BeanCheeseBurrit
 ```
 DOTNET_LegacyExceptionHandling=1 dotnet run
 ```
+
+If the native library crashes, it won't normally show you the stack trace for the managed app. To get the C# stacktrace at the time of the crash you can run with coredumps enabled on crash
+```
+DOTNET_DbgEnableMiniDump=1 dotnet run 
+```
+Then open the coredump for more details
+```
+dotnet-dump analyze /path/to/coredump
+clrstack
+```
 ## Profiling
 Install [dotnet-trace](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#install). 
 ```
@@ -55,6 +65,7 @@ TODO better description of phases
 - OnStore: Rendering. Actually done in separate pipeline with RenderPhase
 
 Some inspiration from [unity phases](https://docs.unity3d.com/6000.0/Documentation/Manual/execution-order.html)
+And Bevy: https://docs.rs/bevy/latest/bevy/prelude/struct.Main.html
 
 # Credits
 ## Art

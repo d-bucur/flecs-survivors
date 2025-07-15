@@ -6,10 +6,12 @@ public struct CachedQueries : IFlecsModule {
 	internal static Query<Camera> camera;
 	internal static Query<Health> playerHealth;
 	internal static Query<PowerCollector> playerPower;
+	internal static Query<InGameEntity> inGameEntities;
 
 	public unsafe void InitModule(World world) {
 		camera = world.QueryBuilder<Camera>().Cached().Build();
 		playerHealth = world.QueryBuilder<Health>().With<Player>().Cached().Build();
 		playerPower = world.QueryBuilder<PowerCollector>().With<Player>().Cached().Build();
+		inGameEntities = world.QueryBuilder<InGameEntity>().Build();
 	}
 }

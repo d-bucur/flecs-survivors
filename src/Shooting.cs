@@ -67,6 +67,7 @@ class ShootingModule : IFlecsModule {
 	static void SpawnBullet(World world, Vector2 pos, BulletData bulletData) {
 		Entity bullet = world.Entity()
 			.Add<Trigger>()
+            .Add<InGameEntity>()
 			.Set(new Bullet(bulletData.Pushback))
 			.Set(new Transform(pos, Vector2.One, 0))
 			.Set(new PhysicsBody(bulletData.Vel, Vector2.Zero, DragCoeff: 1))
@@ -104,6 +105,7 @@ class ShootingModule : IFlecsModule {
 
 	private static void SpawnBulletFx(World world, Vector2 position) {
 		var fx = world.Entity()
+            .Add<InGameEntity>()
 			.Set(new Transform(position, Vector2.One, 0));
 		var sprite = world.Entity()
 			.Set(new Transform(new Vector2(0, 0), new Vector2(1, 1), 0))

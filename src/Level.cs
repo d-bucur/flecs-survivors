@@ -6,23 +6,16 @@ using Tiled;
 namespace flecs_survivors;
 
 // TODO make into proper flecs module?
-class LevelLoader {
-    public static void InitLevel(ref World world) {
-        // RandomGrid(ref world);
-        // FixedWalls(ref world);
-        // FieldTestGrid(ref world);
-
+class LevelLoader : IFlecsModule {
+	public void InitModule(World world) {
         var map = TiledMapLoader.LoadMap(ref world.GetMut<ContentManager>());
         map.TileHeight *= 2;
         map.TileWidth *= 2;
         world.Set(map);
+        GameState.InitGame.Observe<InitGameEvent>(() => InitLevelColliders(ref world, ref map));
+	}
 
-        world.System<TiledMap>()
-            .Kind(Ecs.OnStart)
-            .Each(InitLevelColliders);
-    }
-
-    private static void InitLevelColliders(Entity e, ref TiledMap map) {
+    private static void InitLevelColliders(ref World world, ref TiledMap map) {
         foreach (var layer in map.Layers) {
             if (!layer.Colliders || !layer.Visible)
                 continue;
@@ -32,8 +25,9 @@ class LevelLoader {
                 var y = Math.DivRem(i, layer.Width, out var x);
                 var pos = new Vector2((x + 0.5f) * map.TileWidth, (y + 0.5f) * map.TileHeight);
                 int size = map.TileWidth / 2;
-                e.CsWorld().Entity()
+                world.Entity()
                     .Add<Scenery>()
+                    .Add<InGameEntity>()
                     .Set(new Transform(pos, Vector2.One, 0))
                     .Set(new PhysicsBody(Vector2.Zero, Vector2.Zero, 0))
                     .Set(new Collider(new AABBCollider(new Vector2(size)), CollisionFlags.SCENERY, CollisionFlags.ALL & ~CollisionFlags.POWERUP & ~CollisionFlags.SCENERY));

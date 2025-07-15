@@ -93,6 +93,12 @@ class PhysicsModule : IFlecsModule {
     public void InitModule(World world) {
         world.Set(new SpatialMap(64));
         world.Set(new SpatialQuery());
+        
+        // Probably not needed
+        // GameState.InitGame.Observe<InitGameEvent>(() => world.Query<Collider>().Each((ref Collider c) => {
+        //     c.collisionsCurrentFrame.Clear();
+        //     c.collisionsLastFrame.Clear();
+        // }));
 
         // TODO update to GlobalTransform
         world.System<Transform, PhysicsBody>("Integrate positions & velocities")

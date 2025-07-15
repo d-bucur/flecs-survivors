@@ -26,7 +26,7 @@ struct UpgradeDeck() {
 
 class PowerupModule : IFlecsModule {
     public void InitModule(World world) {
-        InitPowerupDeck(world);
+        GameState.InitGame.Observe<InitGameEvent>(() => InitPowerupDeck(ref world));
 
         world.System<Powerup, Transform, PhysicsBody>()
             .Kind(Ecs.PreUpdate)
@@ -45,7 +45,7 @@ class PowerupModule : IFlecsModule {
             .Entity.DependsOn(GameState.LevelUp);
     }
 
-    private static void InitPowerupDeck(World world) {
+    private static void InitPowerupDeck(ref World world) {
         UpgradeDeck deck = new();
         deck.Value = [
             new UpgradeChoice("Shotgun Weapon", MakeNewWeaponUpgrade(Weapons.PresetShotgun), false),

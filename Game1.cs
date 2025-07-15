@@ -84,10 +84,12 @@ public class Game {
         _world.Import<PhysicsModule>();
         _world.Import<TransformsModule>();
         _world.Import<Main>();
+        _world.Import<LevelLoader>();
         _world.Import<PlayerModule>();
         _world.Import<EnemiesModule>();
         _world.Import<ShootingModule>();
         _world.Import<PowerupModule>();
+        GameState.StartGame();
         // Ecs.Log.SetLevel(1);
     }
 

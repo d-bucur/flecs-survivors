@@ -33,6 +33,7 @@ Libraries:
 
 # Game loop
 - https://www.gafferongames.com/post/fix_your_timestep/
+- https://www.youtube.com/watch?v=yGhfUcPjXuE
 - https://docs.unity3d.com/6000.0/Documentation/Manual/execution-order.html
 
 # Profiling

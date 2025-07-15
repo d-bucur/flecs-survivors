@@ -1,4 +1,5 @@
 ## priority 1
+- respawned player keeps shooting timer from old one. Still some issues when changing scene
 - menus & scenes (states and sub states)
 
 ## priority 2
@@ -18,7 +19,8 @@
 
 ## priority 4
 - add sprite offset to sheet?
-- profiling
+- cache tilemap layers to texture, only draw once
+- profiling. Use dotnet-dump to analyze gc. More: https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-highcpu?tabs=linux
 - better GlobalTransform using change detection on Transform https://www.flecs.dev/flecs/md_docs_2Queries.html#change-detection
 - refactor: don't expose structs as fields: https://docs.flatredball.com/flatredball/contributing/general-programming-flatredball-programming-style-guide#structs-as-fields
 - cache queries: https://www.flecs.dev/flecs/md_docs_2Queries.html#performance-and-caching
@@ -30,7 +32,7 @@
 - networking with rollback??
 
 ## bugs
-- bug sprite sorting not working correctly for large sprites. should add origin to sprite and consider it when sorting. Also tilemap sorting would be nice
+- bug sprite sorting not working correctly for large sprites. should add origin to sprite and consider it when sorting. Also tilemap sorting would be nice (needs either buffer for draws or entities for each tile and grouping by a layer component)
 - flow field LoS and jankiness (enemies don't go directly towards player)
 - bug: window resizing and mouse movement not working properly
 - bug: wonky displacement ever since added multithreading. issue with hash sizes?

@@ -32,7 +32,6 @@ struct DebugConfig() {
 
 class Main : IFlecsModule {
     public void InitModule(World world) {
-        LevelLoader.InitLevel(ref world);
         world.Set(new DebugConfig());
 
         world.System<DespawnTimed>()
@@ -72,6 +71,7 @@ class Main : IFlecsModule {
     }
 
 	static void MoveFollowTargets(ref FollowTarget follow, ref Transform transform) {
+        if (!follow.Target.IsAlive()) return;
         var targetPos = follow.Target.Get<Transform>().Pos; // should be GlobalTransform
         var currentPos = transform.Pos;
         // Anticipation not working great for camera. Disabling now
