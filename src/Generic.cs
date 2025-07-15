@@ -55,4 +55,9 @@ static class Helpers {
         float sin = MathF.Sin(radians);
         return new Vector2(value.X * cos - value.Y * sin, value.X * sin + value.Y * cos);
     }
+
+    public static int Modulo(int a, int b) {
+        int r = a % b;
+        return r < 0 ? r + b : r;
+    }
 }

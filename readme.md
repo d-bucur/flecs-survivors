@@ -10,6 +10,7 @@ Features:
 - Property tweening
 - Sprite animations using one big packed atlas
 - Tilemap rendering of level using [Tiled](https://www.mapeditor.org/) format
+- Menus and state changes between scenes
 
 Note: not all art assets are commited yet
 

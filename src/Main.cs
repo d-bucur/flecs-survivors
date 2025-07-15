@@ -32,6 +32,7 @@ struct DebugConfig() {
 
 class Main : IFlecsModule {
     public void InitModule(World world) {
+        world.Set(new InputManager());
         world.Set(new DebugConfig());
 
         world.System<DespawnTimed>()

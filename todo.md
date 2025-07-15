@@ -1,6 +1,5 @@
 ## priority 1
 - respawned player keeps shooting timer from old one. Still some issues when changing scene
-- menus & scenes (states and sub states)
 
 ## priority 2
 - more weapon types
@@ -26,6 +25,7 @@
 - cache queries: https://www.flecs.dev/flecs/md_docs_2Queries.html#performance-and-caching
 - rotated rectangles in physics engine?
 - too many entities? starting at ~500. Need to debug
+- hierarchical states
 
 ## optional
 - split screen multiplayer

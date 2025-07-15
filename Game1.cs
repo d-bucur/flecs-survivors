@@ -22,6 +22,7 @@ public class Program {
 
         game.InitEcs(winSize);
 
+        // TODO dont quit on ESC
         while (!Raylib.WindowShouldClose()) {
             game.Update();
             game.Draw();
@@ -81,6 +82,7 @@ public class Game {
         _world.Import<GameStateModule>();
         _world.Import<CachedQueries>();
         _world.Import<Render>();
+        _world.Import<MenusModule>();
         _world.Import<PhysicsModule>();
         _world.Import<TransformsModule>();
         _world.Import<Main>();

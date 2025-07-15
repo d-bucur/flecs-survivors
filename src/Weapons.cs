@@ -47,7 +47,7 @@ class UniformRotatingPattern(
     uint _level = 1;
     public uint Level {
         get => _level; set {
-            // TODO make more generic, using scaling functions
+            // TODO not using levels anymore. Remove
             var diff = value - _level;
             bulletsPerShot += (int)diff * bulletsPerLevel;
             shootInterval *= MathF.Pow(intervalFactorPerLevel, diff); // can div0

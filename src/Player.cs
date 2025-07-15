@@ -66,15 +66,16 @@ class PlayerModule : IFlecsModule {
     }
 
     static void PlayerKeyInput(Entity e, ref PhysicsBody b, ref Shooter shooter) {
+        var actions = e.CsWorld().Get<InputManager>();
         Vector2 dir = Vector2.Zero;
-        if (Raylib.IsKeyDown(KeyboardKey.D)) dir += new Vector2(1, 0);
-        if (Raylib.IsKeyDown(KeyboardKey.A)) dir += new Vector2(-1, 0);
-        if (Raylib.IsKeyDown(KeyboardKey.S)) dir += new Vector2(0, 1);
-        if (Raylib.IsKeyDown(KeyboardKey.W)) dir += new Vector2(0, -1);
+        if (actions.IsDown(InputActions.RIGHT)) dir += new Vector2(1, 0);
+        if (actions.IsDown(InputActions.LEFT)) dir += new Vector2(-1, 0);
+        if (actions.IsDown(InputActions.DOWN)) dir += new Vector2(0, 1);
+        if (actions.IsDown(InputActions.UP)) dir += new Vector2(0, -1);
         if (dir != Vector2.Zero) Vector2.Normalize(dir);
         b.Accel = dir * PLAYER_ACCEL;
 
-        if (Raylib.IsKeyPressed(KeyboardKey.Space)) {
+        if (actions.IsPressed(InputActions.CONFIRM)) {
             shooter.Enabled = !shooter.Enabled;
         }
     }

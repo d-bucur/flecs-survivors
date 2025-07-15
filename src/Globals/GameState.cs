@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using Flecs.NET.Core;
 using flecs_survivors;
 
-// Common tag for the states in GameState
-enum GameStateComp;
+record struct OnStateEntered(Entity OldState);
+record struct OnStateLeft(Entity NewState);
+// TODO can maybe just replace this with OnStateChange for InitGame
 enum InitGameEvent;
-record struct OnStateChange(Entity OldState);
 
+// Common tag for states in GameState. Not really used right now
+enum GameStateTag;
 // Would be nice to declare a top level state where an entity exists instead of this
 /// <summary>
 /// All tagged with this are destroyed when exiting game
@@ -62,14 +64,15 @@ struct GameState {
 			Timers.runningTimer.Start();
 			Timers.intervalTimer.Start();
 		}
-		CurrentState.Enqueue(new OnStateChange(oldState));
+		oldState.Enqueue(new OnStateLeft(newState));
+		newState.Enqueue(new OnStateEntered(oldState));
 	}
 
 	internal static void StartGame() {
-		CurrentState = InitGame;
+		CurrentState = MainMenu;
 		AllStates = [MainMenu, InitGame, Running, LevelUp, GameOver];
 		AllStates.ForEach((s) => { if (s != CurrentState) s.Disable(); });
-		ChangeState(InitGame);
+		ChangeState(CurrentState);
 	}
 }
 
@@ -104,16 +107,16 @@ class GameStateModule : IFlecsModule {
 	}
 
 	private static void InitGameState(World world) {
-		GameState.MainMenu = world.Component("MainMenuState").Add<GameStateComp>();
-		GameState.InitGame = world.Component("InitGameState").Add<GameStateComp>()
-			.Entity.Observe((Entity _, ref OnStateChange e) => {
+		GameState.MainMenu = world.Component("MainMenuState").Add<GameStateTag>();
+		GameState.InitGame = world.Component("InitGameState").Add<GameStateTag>()
+			.Entity.Observe((Entity _, ref OnStateEntered e) => {
 				ClearGameEntities();
 				GameState.InitGame.Enqueue(new InitGameEvent());
 				GameState.ChangeState(GameState.Running);
 			});
-		GameState.Running = world.Component("RunningState").Add<GameStateComp>();
-		GameState.LevelUp = world.Component("LevelUpState").Add<GameStateComp>();
-		GameState.GameOver = world.Component("GameOverState").Add<GameStateComp>();
+		GameState.Running = world.Component("RunningState").Add<GameStateTag>();
+		GameState.LevelUp = world.Component("LevelUpState").Add<GameStateTag>();
+		GameState.GameOver = world.Component("GameOverState").Add<GameStateTag>();
 	}
 
 	// An alternative would be to parent all level entities to a single root entity and then destroy that.
