@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Flecs.NET.Core;
-using Raylib_cs;
 
 namespace flecs_survivors;
 
@@ -16,33 +16,22 @@ record struct PowerCollector(float Range, float Exp = 1.6f) {
 
 record struct UpgradeChoice(string Description, Action<Entity> Apply, bool IsRepeatable = true);
 struct CurrentUpgradeChoices() {
-    public List<UpgradeChoice> Value = new();
-    public bool Enabled = false;
-    public Vector2 AnchorUI;
+    public List<UpgradeChoice> Value = [];
 }
 struct UpgradeDeck() {
-    public List<UpgradeChoice> Value = new();
+    public List<UpgradeChoice> Value = [];
 }
 
 class PowerupModule : IFlecsModule {
+	readonly UpgradeMenu _upgradeMenu = new();
+
     public void InitModule(World world) {
         GameState.InitGame.Observe<OnStateEntered>(() => InitPowerupDeck(ref world));
+        _upgradeMenu.Init(world);
 
         world.System<Powerup, Transform, PhysicsBody>()
             .Kind(Ecs.PreUpdate)
             .Iter(AttractPowerups);
-
-        world.System<RenderCtx, CurrentUpgradeChoices>()
-            .TermAt(0).Singleton()
-            .Kind<PostRenderPhase>()
-            .Each(DrawLevelUpScreen)
-            .Entity.DependsOn(GameState.LevelUp);
-
-        world.System<CurrentUpgradeChoices>()
-            .With<Player>()
-            .Kind(Ecs.PostLoad)
-            .Each(ProcessUpgradeChoices)
-            .Entity.DependsOn(GameState.LevelUp);
     }
 
     private static void InitPowerupDeck(ref World world) {
@@ -78,30 +67,7 @@ class PowerupModule : IFlecsModule {
         }
     }
 
-    private void ProcessUpgradeChoices(Entity e, ref CurrentUpgradeChoices choices) {
-        if (!choices.Enabled) return;
-
-        int choiceIdx = -1;
-        if (Raylib.IsKeyPressed(KeyboardKey.Q)) choiceIdx = 0;
-        else if (Raylib.IsKeyPressed(KeyboardKey.E)) choiceIdx = 1;
-        else if (Raylib.IsKeyPressed(KeyboardKey.Z)) choiceIdx = 2;
-        else if (Raylib.IsKeyPressed(KeyboardKey.C)) choiceIdx = 3;
-        if (choiceIdx == -1) return;
-
-        choices.Value[choiceIdx].Apply(e);
-        var deck = e.CsWorld().Get<UpgradeDeck>();
-        for (int i = 0; i < choices.Value.Count; i++) {
-            bool reshuffle = i != choiceIdx || choices.Value[choiceIdx].IsRepeatable;
-            if (reshuffle)
-                deck.Value.Add(choices.Value[i]);
-        }
-        e.Remove<CurrentUpgradeChoices>();
-        GameState.ChangeState(GameState.Running);
-    }
-
     internal static void CreateUpgradeChoices(Entity e) {
-        GameState.ChangeState(GameState.LevelUp);
-
         var deck = e.CsWorld().Get<UpgradeDeck>();
         CurrentUpgradeChoices choices = new();
         for (int i = 0; i < 4 && deck.Value.Count > 0; i++) {
@@ -112,13 +78,7 @@ class PowerupModule : IFlecsModule {
         }
         e.Set(choices);
 
-        // Tween in UI animation
-        new Tween(e).With(
-            (ref CurrentUpgradeChoices c, Vector2 v) => { c.AnchorUI = v; },
-            new Vector2(100, 600), new Vector2(100, 100),
-            1500f, Ease.QuartOut, Vector2.Lerp,
-            (ref CurrentUpgradeChoices c) => { c.Enabled = true; }
-        ).RegisterEcs();
+        GameState.ChangeState(GameState.LevelUp);
     }
 
     internal static void HandlePowerCollected(Entity e, ref OnCollisionEnter collision) {
@@ -144,6 +104,41 @@ class PowerupModule : IFlecsModule {
             collision.Other.Destruct();
     }
 
+    enum UpgradeMenuTag;
+    class UpgradeMenu : MenuBase<UpgradeMenuTag> {
+        public UpgradeMenu() : base(GameState.LevelUp, ["Placeholder"]) {
+            ButtonHeight = 100;
+        }
+
+        protected override void EnterMenu(ref World world) {
+            var choices = CachedQueries.currentUpgradeChoices.First().Get<CurrentUpgradeChoices>();
+            Choices = [.. choices.Value.Select(e => e.Description)];
+            base.EnterMenu(ref world);
+        }
+
+        override protected void HandleMenuTransition(Entity _, ref MenuSelectable selectable, ref InputManager actions) {
+            if (!actions.IsPressed(InputActions.CONFIRM)) return;
+
+            // Apply selected upgrade
+            Entity choicesEntity = CachedQueries.currentUpgradeChoices.First();
+			var choices = choicesEntity.Get<CurrentUpgradeChoices>();
+            var choiceIdx = selectable.CurrentValue;
+            choices.Value[choiceIdx].Apply(choicesEntity);
+
+            // Shuffle remaining items into deck
+            var deck = choicesEntity.CsWorld().Get<UpgradeDeck>();
+            for (int i = 0; i < choices.Value.Count; i++) {
+                bool reshuffle = i != choiceIdx || choices.Value[choiceIdx].IsRepeatable;
+                if (reshuffle)
+                    deck.Value.Add(choices.Value[i]);
+            }
+
+            // Cleanup
+            choicesEntity.Remove<CurrentUpgradeChoices>();
+            GameState.ChangeState(GameState.Running); 
+        }
+    }
+
     // Old code for weapons upgrades
     // static void UpdateWeaponLevels(ref PowerCollector collector, ref Shooter shooter) {
     //     var level = 1 + (uint)collector.AccumulatedCurrent / 5;
@@ -153,26 +148,4 @@ class PowerupModule : IFlecsModule {
     //         Console.WriteLine($"Updated weapon level to {level}");
     //     }
     // }
-
-    private void DrawLevelUpScreen(ref RenderCtx ctx, ref CurrentUpgradeChoices choices) {
-        var offset = choices.AnchorUI;
-        int width = ctx.WinSize.X / 3;
-        int height = ctx.WinSize.Y / 3;
-        Render.DrawTextShadowed("Choose an upgrade", (int)offset.X + width, (int)offset.Y - 30);
-        if (choices.Value.Count > 0)
-            DrawUpgradeChoice($"{choices.Value[0].Description}\nPress Q", new Rectangle(offset.X, offset.Y, width, height));
-        if (choices.Value.Count > 1)
-            DrawUpgradeChoice($"{choices.Value[1].Description}\nPress E", new Rectangle(offset.X, offset.Y + height, width, height));
-        if (choices.Value.Count > 2)
-            DrawUpgradeChoice($"{choices.Value[2].Description}\nPress Z", new Rectangle(offset.X + width, offset.Y, width, height));
-        if (choices.Value.Count > 3)
-            DrawUpgradeChoice($"{choices.Value[3].Description}\nPress C", new Rectangle(offset.X + width, offset.Y + height, width, height));
-    }
-
-    private void DrawUpgradeChoice(string text, Rectangle rect) {
-        float borderThick = 3;
-        Raylib.DrawRectangleRec(rect, Raylib.Fade(Color.DarkGray, 0.7f));
-        Raylib.DrawRectangleLinesEx(rect, borderThick, Raylib.Fade(Color.Black, 0.3f));
-        Render.DrawTextShadowed(text, (int)(rect.X + 30), (int)(rect.Y + 30));
-    }
 }

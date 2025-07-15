@@ -79,7 +79,7 @@ public class Game {
         // _world.SetThreads(Environment.ProcessorCount);
         // _world.SetTaskThreads(Environment.ProcessorCount);
 
-        _world.Import<GameStateModule>();
+        _world.Import<GameState>();
         _world.Import<CachedQueries>();
         _world.Import<Render>();
         _world.Import<MenusModule>();

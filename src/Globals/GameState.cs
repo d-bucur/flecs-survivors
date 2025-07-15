@@ -14,15 +14,28 @@ enum GameStateTag;
 /// </summary>
 enum InGameEntity;
 
+struct Timers {
+	/// <summary>
+	/// Use for game logic that updates continously, like physics
+	/// </summary>
+	public static TimerEntity runningTimer;
+	/// <summary>
+	/// Use for rate and intervals in game logic, like spawning enemies. Ticks every 100 ms
+	/// </summary>
+	public static TimerEntity intervalTimer;
+	/// <summary>
+	/// Use for things in menus like animations, that can run indipendent of the game sim
+	/// </summary>
+	public static TimerEntity menuTimer;
+}
+
 // To make systems only run when in a certain state, add the following to their definition:
 // .Entity.DependsOn(GameState.Running)
-// TODO too much logic in common with GameStateModule. Refactor and merge them
-// Could refactor State machine logic into something more generic so it's reusable
-struct GameState {
+class GameState : IFlecsModule {
+	// Could refactor State machine logic into something more generic so it's reusable
 	// can probably use hierarchical states here by adding DependsOn relationship
 	// would be better to use world singleton rather than static, but use sites would be more complicated
 	public static Entity CurrentState;
-
 	/// <summary>
 	/// Main menu screen
 	/// </summary>
@@ -50,10 +63,17 @@ struct GameState {
 
 	private static List<Entity> AllStates = [];
 
+	public void InitModule(World world) {
+		InitGameState(world);
+		InitTimers(world);
+	}
+
 	/// <summary>
 	/// Weak typing for newState. Plz send one of the types above so it doesn't bork
 	/// </summary>
 	public static void ChangeState(Entity newState) {
+		if (!newState.Has<GameStateTag>())
+			throw new ArgumentException($"Invalid state: {newState}. Should be an entity marked with GameStateTag");
 		Console.WriteLine($"Changing state to {newState}");
 		var oldState = CurrentState;
 		CurrentState = newState;
@@ -79,28 +99,6 @@ struct GameState {
 		AllStates.ForEach(s => s.Disable());
 		ChangeState(MainMenu);
 	}
-}
-
-struct Timers {
-	/// <summary>
-	/// Use for game logic that updates continously, like physics
-	/// </summary>
-	public static TimerEntity runningTimer;
-	/// <summary>
-	/// Use for rate and intervals in game logic, like spawning enemies. Ticks every 100 ms
-	/// </summary>
-	public static TimerEntity intervalTimer;
-	/// <summary>
-	/// Use for things in menus like animations, that can run indipendent of the game sim
-	/// </summary>
-	public static TimerEntity menuTimer;
-}
-
-class GameStateModule : IFlecsModule {
-	public void InitModule(World world) {
-		InitGameState(world);
-		InitTimers(world);
-	}
 
 	private static void InitTimers(World world) {
 		Timers.runningTimer = world.Timer();
@@ -112,29 +110,22 @@ class GameStateModule : IFlecsModule {
 	}
 
 	private static void InitGameState(World world) {
-		GameState.MainMenu = world.Component("MainMenuState").Add<GameStateTag>();
-		GameState.PreInitGame = world.Component("PreInitGameState").Add<GameStateTag>()
+		MainMenu = world.Component("MainMenuState").Add<GameStateTag>();
+		PreInitGame = world.Component("PreInitGameState").Add<GameStateTag>()
 			.Entity.Observe((Entity _, ref OnStateEntered e) => {
 				ClearGameEntities();
-				GameState.ChangeState(GameState.InitGame);
+				ChangeState(InitGame);
 			});
-		GameState.InitGame = world.Component("InitGameState").Add<GameStateTag>()
+		InitGame = world.Component("InitGameState").Add<GameStateTag>()
 			.Entity.Observe((Entity _, ref OnStateEntered e) => {
-				GameState.ChangeState(GameState.Running);
+				ChangeState(Running);
 			});
-		GameState.Running = world.Component("RunningState").Add<GameStateTag>();
-		GameState.LevelUp = world.Component("LevelUpState").Add<GameStateTag>();
-		GameState.GameOver = world.Component("GameOverState").Add<GameStateTag>();
+		Running = world.Component("RunningState").Add<GameStateTag>();
+		LevelUp = world.Component("LevelUpState").Add<GameStateTag>();
+		GameOver = world.Component("GameOverState").Add<GameStateTag>();
 	}
 
 	// An alternative would be to parent all level entities to a single root entity and then destroy that.
 	// Would be more similar to hierarchies in engines. Not sure which is better
 	internal static void ClearGameEntities() => CachedQueries.inGameEntities.Each((Entity e, ref InGameEntity _) => e.Destruct());
 }
-
-// Old code for states. Remove?
-// class GameState {
-//     public interface IGamestate;
-//     public struct Running : IGamestate;
-//     public struct Paused : IGamestate;
-// }

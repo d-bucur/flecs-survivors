@@ -160,5 +160,8 @@ public class Ease {
 	public static float QuartOut(float x) {
 		return 1 - MathF.Pow(1 - x, 4);
 	}
+	public static float SineOut(float x) {
+		return MathF.Sin(x * MathF.PI / 2);
+	}
 	#endregion
 }
