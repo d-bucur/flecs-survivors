@@ -100,7 +100,7 @@ class PlayerModule : IFlecsModule {
         if (Main.DecreaseHealth(player, collision.Data.Penetration)) {
             if (player.Get<Health>().Value <= 0) {
                 Console.WriteLine($"Game Over");
-                GameState.ChangeState(GameState.InitGame);
+                GameState.ChangeState(GameState.GameOver);
             }
             Main.FlashDamage(player);
             Main.CameraShake(10);

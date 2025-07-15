@@ -1,5 +1,4 @@
 ## priority 1
-- respawned player keeps shooting timer from old one. Still some issues when changing scene
 
 ## priority 2
 - more weapon types
@@ -15,6 +14,7 @@
 - juice: dmg indicators?, custom particles?
 - sound
 - web build
+- bigger map
 
 ## priority 4
 - add sprite offset to sheet?
@@ -26,6 +26,7 @@
 - rotated rectangles in physics engine?
 - too many entities? starting at ~500. Need to debug
 - hierarchical states
+- prettier menus
 
 ## optional
 - split screen multiplayer

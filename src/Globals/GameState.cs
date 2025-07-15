@@ -18,6 +18,8 @@ enum InGameEntity;
 
 // To make systems only run when in a certain state, add the following to their definition:
 // .Entity.DependsOn(GameState.Running)
+// TODO too much logic in common with GameStateModule. Refactor and merge them
+// Could refactor State machine logic into something more generic so it's reusable
 struct GameState {
 	// can probably use hierarchical states here by adding DependsOn relationship
 	// would be better to use world singleton rather than static, but use sites would be more complicated
@@ -43,7 +45,7 @@ struct GameState {
 	/// Game is paused for game over screen
 	/// </summary>
 	public static Entity GameOver;
-	
+
 	private static List<Entity> AllStates = [];
 
 	/// <summary>
@@ -52,27 +54,28 @@ struct GameState {
 	public static void ChangeState(Entity newState) {
 		Console.WriteLine($"Changing state to {newState}");
 		var oldState = CurrentState;
-		CurrentState.Disable();
-		newState.Enable();
 		CurrentState = newState;
 
-		if (newState == LevelUp || newState == MainMenu || newState == GameOver) {
-			Timers.runningTimer.Stop();
-			Timers.intervalTimer.Stop();
-		}
-		else if (newState == Running) {
+		if (newState == Running) {
 			Timers.runningTimer.Start();
 			Timers.intervalTimer.Start();
 		}
+		else {
+			Timers.runningTimer.Stop();
+			Timers.intervalTimer.Stop();
+		}
+
 		oldState.Enqueue(new OnStateLeft(newState));
+		oldState.Disable();
+		newState.Enable();
 		newState.Enqueue(new OnStateEntered(oldState));
 	}
 
 	internal static void StartGame() {
-		CurrentState = MainMenu;
+		CurrentState = GameOver; // any state other than the first one, just for the init
 		AllStates = [MainMenu, InitGame, Running, LevelUp, GameOver];
-		AllStates.ForEach((s) => { if (s != CurrentState) s.Disable(); });
-		ChangeState(CurrentState);
+		AllStates.ForEach(s => s.Disable());
+		ChangeState(MainMenu);
 	}
 }
 

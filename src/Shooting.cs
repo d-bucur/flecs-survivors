@@ -20,6 +20,7 @@ record struct Bullet(float Pushback = 0f);
 class ShootingModule : IFlecsModule {
 	public void InitModule(World world) {
 
+		// Don't need to do this every frame
 		world.System<Shooter, GlobalTransform>()
 			.Kind(Ecs.PreUpdate)
 			.Iter(SetShooterTarget);
@@ -39,6 +40,7 @@ class ShootingModule : IFlecsModule {
 			double smallestDistance = double.MaxValue;
 			Vector2? closestEnemy = null;
 
+			// TODO should do spatial query around
 			qEnemies.Each((ref GlobalTransform enemy) => {
 				double distanceSqr = (myPos - enemy.Pos).LengthSquared();
 				if (distanceSqr < smallestDistance) {

@@ -20,7 +20,7 @@ interface IBulletPattern {
 /// Flexible way of describing multiple patterns
 /// </summary>
 // TODO kind of a mess. Make everything a public field
-class UniformRotatingPattern(
+struct UniformRotatingPattern(
     float shootInterval,
     Color Color,
     string name,

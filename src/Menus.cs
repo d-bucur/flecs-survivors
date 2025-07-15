@@ -17,28 +17,15 @@ struct MenuSelectable {
 }
 
 class MenusModule : IFlecsModule {
-	private enum MainMenu;
-
 	public void InitModule(World world) {
-		GameState.MainMenu.Observe<OnStateEntered>(() => EnterMenu(ref world));
-		GameState.MainMenu.Observe<OnStateLeft>(() => LeaveMenu(ref world));
+		// Init every sub menu
+		new MainMenu().Init(world);
+		new GameOverMenu().Init(world);
 
 		world.System<MenuSelectable, InputManager>()
 			.TermAt(1).Singleton()
 			.Kind(Ecs.PostLoad)
 			.Each(HandleMenuSelection);
-
-		world.System<MenuSelectable, InputManager>()
-			.TermAt(1).Singleton()
-			.Kind(Ecs.PostLoad)
-			.Each(HandleMenuProgression);
-
-		world.System<RenderCtx, MenuSelectable>()
-			.With<MainMenu>()
-			.TermAt(0).Singleton()
-			.Kind<PostRenderPhase>()
-			.Each(DrawMenu)
-			.Entity.DependsOn(GameState.MainMenu);
 	}
 
 	private void HandleMenuSelection(ref MenuSelectable selectable, ref InputManager actions) {
@@ -46,43 +33,91 @@ class MenusModule : IFlecsModule {
 		if (actions.IsPressed(InputActions.DOWN)) selectable.CurrentValue++;
 	}
 
-	private void HandleMenuProgression(ref MenuSelectable selectable, ref InputManager actions) {
+	public static void DrawMenuButton(string text, Rectangle rect, Color? color = null) {
+		float borderThick = 3;
+		Raylib.DrawRectangleRec(rect, Raylib.Fade(color ?? Color.DarkGray, 0.7f));
+		Raylib.DrawRectangleLinesEx(rect, borderThick, Raylib.Fade(Color.Black, 0.3f));
+		Render.DrawTextShadowed(text, (int)(rect.X + 30), (int)(rect.Y + (rect.Height - 18) / 2));
+	}
+}
+
+// Every menu needs its separate MenuTag (an enum) so it's registered on the ECS
+class MenuBase<MenuTag>(
+	Entity State,
+	string[] Choices
+) where MenuTag : Enum {
+	public void Init(World world) {
+		State.Observe<OnStateEntered>(() => EnterMenu(ref world));
+		State.Observe<OnStateLeft>(() => LeaveMenu(ref world));
+
+		world.System<MenuSelectable, InputManager>()
+			.With<MenuTag>()
+			.TermAt(1).Singleton()
+			.Kind(Ecs.PostLoad)
+			.Each(HandleMenuTransition);
+
+		world.System<RenderCtx, MenuSelectable>()
+			.With<MenuTag>()
+			.TermAt(0).Singleton()
+			.Kind<PostRenderPhase>()
+			.Each(DrawMenu)
+			.Entity.DependsOn(State);
+	}
+
+	protected virtual void HandleMenuTransition(ref MenuSelectable selectable, ref InputManager actions) {
+	}
+
+	protected virtual void EnterMenu(ref World world) {
+		Console.WriteLine($"Creating Menu {typeof(MenuTag)}");
+		world.Entity()
+			.Add<MenuTag>()
+			.Set(new MenuSelectable { TotalValues = Choices.Length });
+	}
+
+	protected virtual void LeaveMenu(ref World world) {
+		Console.WriteLine($"Destoying Menu {typeof(MenuTag)}");
+		world.QueryBuilder().With<MenuTag>().Build().Each(e => e.Destruct());
+	}
+
+	protected virtual void DrawMenu(ref RenderCtx ctx, ref MenuSelectable m) {
+		int width = ctx.WinSize.X / 3;
+		int height = 50;
+		var offset = new Vector2(width, 100);
+		const float space = 70;
+		for (int i = 0; i < Choices.Length; i++) {
+			Color? color = m.CurrentValue == i ? Color.Red : null;
+			MenusModule.DrawMenuButton(Choices[i], new Rectangle(offset.X, offset.Y + space * i, width, height), color);
+		}
+	}
+}
+
+enum MainMenuTag;
+file class MainMenu : MenuBase<MainMenuTag> {
+	public MainMenu() : base(GameState.MainMenu, ["Play", "Credits", "Exit"]) {
+	}
+
+	override protected void HandleMenuTransition(ref MenuSelectable selectable, ref InputManager actions) {
 		if (actions.IsPressed(InputActions.CONFIRM)) {
 			if (selectable.CurrentValue == 0) {
 				GameState.ChangeState(GameState.InitGame);
 			}
 		}
 	}
+}
 
-	const int COUNT_CHOICES_MAIN_MENU = 3;
-	private static void EnterMenu(ref World world) {
-		world.Entity()
-			.Add<MainMenu>()
-			.Set(new MenuSelectable { TotalValues = COUNT_CHOICES_MAIN_MENU });
+enum GameOverTag;
+file class GameOverMenu : MenuBase<GameOverTag> {
+	public GameOverMenu() : base(GameState.GameOver, ["Restart", "Menu", "Exit"]) {
 	}
 
-	private static void LeaveMenu(ref World world) {
-		world.QueryBuilder().With<MainMenu>().Build().Each(e => e.Destruct());
-	}
-
-	private Color?[] _colors = new Color?[COUNT_CHOICES_MAIN_MENU];
-	private void DrawMenu(ref RenderCtx ctx, ref MenuSelectable m) {
-		int width = ctx.WinSize.X / 3;
-		int height = 50;
-		var offset = new Vector2(width, 100);
-		const float space = 70;
-		for (int i = 0; i < _colors.Length; i++) {
-			_colors[i] = m.CurrentValue == i ? Color.Red : null;
+	override protected void HandleMenuTransition(ref MenuSelectable selectable, ref InputManager actions) {
+		if (actions.IsPressed(InputActions.CONFIRM)) {
+			if (selectable.CurrentValue == 0) {
+				GameState.ChangeState(GameState.InitGame);
+			}
+			if (selectable.CurrentValue == 1) {
+				GameState.ChangeState(GameState.MainMenu);
+			}
 		}
-		DrawMenuButton("Play", new Rectangle(offset.X, offset.Y, width, height), _colors[0]);
-		DrawMenuButton("Credits", new Rectangle(offset.X, offset.Y + space, width, height), _colors[1]);
-		DrawMenuButton("Exit", new Rectangle(offset.X, offset.Y + space * 2, width, height), _colors[2]);
-	}
-
-	private static void DrawMenuButton(string text, Rectangle rect, Color? color = null) {
-		float borderThick = 3;
-		Raylib.DrawRectangleRec(rect, Raylib.Fade(color ?? Color.DarkGray, 0.7f));
-		Raylib.DrawRectangleLinesEx(rect, borderThick, Raylib.Fade(Color.Black, 0.3f));
-		Render.DrawTextShadowed(text, (int)(rect.X + 30), (int)(rect.Y + (rect.Height - 18) / 2));
 	}
 }

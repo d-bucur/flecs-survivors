@@ -22,9 +22,8 @@ struct Sprite(string Path, OriginAlign align = OriginAlign.BOTTOM_CENTER, Color?
     public PackingData? Packing = null; // TODO should only keep my own key
     public Color Tint = Tint.GetValueOrDefault(Color.White);
     public OriginAlign Align = align;
-    // TODO set to default in ctor. Can still get NPE in some cases
-    public Vector2? Origin = null;
     public Rectangle DrawSource;
+    public Vector2 Origin = Vector2.Zero;
     public bool Flipped = false;
 
     internal void SetDrawSource(Rectangle source) {
@@ -210,7 +209,7 @@ public struct Render : IFlecsModule {
                 if ((t.Pos - camera.Value.Target).LengthSquared() > cutoffDistance) continue;
 
                 Sprite sprite = spriteField[i];
-                Vector2 origin = sprite.Origin!.Value * transform[i].Scale;
+                Vector2 origin = sprite.Origin * transform[i].Scale;
                 Rectangle source = sprite.DrawSource;
                 var dest = new Rectangle(t.Pos, source.Width * t.Scale.X, source.Height * t.Scale.Y);
                 if (sprite.Flipped) {
